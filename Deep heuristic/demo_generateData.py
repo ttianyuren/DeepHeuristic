@@ -220,22 +220,22 @@ def gather_training_data():
     scn = PlanningScenario()
     robot = scn.arm_left
 
-    tdata_reach = []
-    tdata_direction = []
+    tdata_workspace = []
+    tdata_collsion = []
 
     file_reach = 'reach.pk'
     file_direction = 'direction.pk'
 
     if os.path.exists(file_reach):
         with open(file_reach, 'rb') as f:
-            tdata_reach = pk.load(f)
+            tdata_workspace = pk.load(f)
     if os.path.exists(file_direction):
         with open(file_direction, 'rb') as f:
-            tdata_direction = pk.load(f)
+            tdata_collsion = pk.load(f)
 
-    print('existing_record, nn = {}/{}, cnn = {}/{}'.format(len([y for x, y in tdata_reach if y]), len(tdata_reach),
-                                                            len([y for x, y in tdata_direction if y]),
-                                                            len(tdata_direction)))
+    print('existing_record, nn = {}/{}, cnn = {}/{}'.format(len([y for x, y in tdata_workspace if y]), len(tdata_workspace),
+                                                            len([y for x, y in tdata_collsion if y]),
+                                                            len(tdata_collsion)))
 
     for ep in range(10000):
         scn.reset()
@@ -259,7 +259,7 @@ def gather_training_data():
                 body_pose = BodyPose(body)
                 approach_conf, command, q_approach, q_grasp = f_ik_grasp.search((body, body_pose, grasp))
                 label = q_grasp is not None  # if the object is reachable
-                tdata_reach.append(
+                tdata_workspace.append(
                     ((dist, fdir_jj, z_jj),
                      label))
                 if q_grasp:
@@ -271,23 +271,23 @@ def gather_training_data():
                     label = command is not None  # if no collision exists
                     if visualization and command is not None:
                         draw_ee_frame(robot, 3, True)
-                    tdata_direction.append(
+                    tdata_collsion.append(
                         ((direction, obj_extent[0], obj_extent[1], obj_extent[2], mat_image),
                          label))
                 direction += 1
 
         with open(file_reach, 'wb') as f:
-            pk.dump(tdata_reach, f)
+            pk.dump(tdata_workspace, f)
         with open(file_direction, 'wb') as f:
-            pk.dump(tdata_direction, f)
+            pk.dump(tdata_collsion, f)
 
         now = datetime.now()
         str_now = '{}'.format(now.strftime("%H:%M:%S"))
         print(
-            'ep {}, {}    reach = {}/{}, direction = {}/{}'.format(ep, str_now, len([y for x, y in tdata_reach if y]),
-                                                                   len(tdata_reach),
-                                                                   len([y for x, y in tdata_direction if y]),
-                                                                   len(tdata_direction)))
+            'ep {}, {}    reach = {}/{}, direction = {}/{}'.format(ep, str_now, len([y for x, y in tdata_workspace if y]),
+                                                                   len(tdata_workspace),
+                                                                   len([y for x, y in tdata_collsion if y]),
+                                                                   len(tdata_collsion)))
 
     disconnect()
     print('Finished.')
