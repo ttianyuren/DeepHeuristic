@@ -19,5 +19,5 @@ Tutorial: How to create urdf-files from urdf.xacro
 	- source /devel/setup.bash
 
 
-Alternativ, programm it with rospy:
+Alternativly, programm it with rospy:
 	- it looks like that we can do that directly but it tooks longer for the simulation to load the enviroment
