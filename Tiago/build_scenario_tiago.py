@@ -33,11 +33,11 @@ def place_movable(certified):
 class PlanningScenario(object):
     def __init__(self):
         with HideOutput():
-            self.robot = load_pybullet("tiago_description/tiago_dual.urdf",
+            self.robot = load_pybullet("/Tiago/tiago_description/tiago_dual.urdf",
                                        fixed_base=True)
 
 
-            self.floor = load_model('models/short_floor.urdf', fixed_base=True)
+            #self.floor = load_model('/utils/models/short_floor.urdf', fixed_base=True)
 
 
 
@@ -69,7 +69,7 @@ class PlanningScenario(object):
 
 def display_scenario():
     connect(use_gui=True)
-
+    
     scn = PlanningScenario()
     scn.get_elemetns()
 
