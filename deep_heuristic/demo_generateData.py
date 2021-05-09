@@ -214,28 +214,28 @@ class PlanningScenario(object):
 
 
 def gather_training_data():
-    visualization = 1
+    visualization = 0
     connect(use_gui=visualization)
 
     scn = PlanningScenario()
     robot = scn.arm_left
 
     tdata_workspace = []
-    tdata_collsion = []
+    tdata_collision = []
 
-    file_reach = 'reach.pk'
-    file_direction = 'direction.pk'
+    file_reach = 'training_data/reach.pk'
+    file_direction = 'training_data/direction.pk'
 
     if os.path.exists(file_reach):
         with open(file_reach, 'rb') as f:
             tdata_workspace = pk.load(f)
     if os.path.exists(file_direction):
         with open(file_direction, 'rb') as f:
-            tdata_collsion = pk.load(f)
+            tdata_collision = pk.load(f)
 
     print('existing_record, nn = {}/{}, cnn = {}/{}'.format(len([y for x, y in tdata_workspace if y]), len(tdata_workspace),
-                                                            len([y for x, y in tdata_collsion if y]),
-                                                            len(tdata_collsion)))
+                                                            len([y for x, y in tdata_collision if y]),
+                                                            len(tdata_collision)))
 
     for ep in range(10000):
         scn.reset()
@@ -271,7 +271,7 @@ def gather_training_data():
                     label = command is not None  # if no collision exists
                     if visualization and command is not None:
                         draw_ee_frame(robot, 3, True)
-                    tdata_collsion.append(
+                    tdata_collision.append(
                         ((direction, obj_extent[0], obj_extent[1], obj_extent[2], mat_image),
                          label))
                 direction += 1
@@ -279,15 +279,15 @@ def gather_training_data():
         with open(file_reach, 'wb') as f:
             pk.dump(tdata_workspace, f)
         with open(file_direction, 'wb') as f:
-            pk.dump(tdata_collsion, f)
+            pk.dump(tdata_collision, f)
 
         now = datetime.now()
         str_now = '{}'.format(now.strftime("%H:%M:%S"))
         print(
             'ep {}, {}    reach = {}/{}, direction = {}/{}'.format(ep, str_now, len([y for x, y in tdata_workspace if y]),
                                                                    len(tdata_workspace),
-                                                                   len([y for x, y in tdata_collsion if y]),
-                                                                   len(tdata_collsion)))
+                                                                   len([y for x, y in tdata_collision if y]),
+                                                                   len(tdata_collision)))
 
     disconnect()
     print('Finished.')
