@@ -10,7 +10,7 @@ file_reach = '../training_data/reach.pk'
 with open(file_reach, 'rb') as f:
     all_data = pickle.load(f)
 
-train_data, train_labels, eval_data, eval_labels = split_data(all_data, test_size=0.1)
+train_data, train_labels, eval_data, eval_labels = split_data(all_data, test_size=0.1, num_of_param=3)
 
 clf = SVC(gamma='auto')
 clf.fit(train_data, train_labels)
