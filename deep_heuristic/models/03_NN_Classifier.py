@@ -12,13 +12,14 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
 
+################################################## Data Preprocessing ##################################################
+
 file_reach = '../training_data/reach.pk'
 with open(file_reach, 'rb') as f:
     all_data = pk.load(f)
 
 train_data, train_labels, eval_data, eval_labels = split_data(all_data, test_size=0.2, num_of_param=3)
 
-##################################################### Build Model #####################################################
 
 scaler = StandardScaler()
 X_train = scaler.fit_transform(train_data)
@@ -26,7 +27,7 @@ X_test = scaler.transform(eval_data)
 
 EPOCHS = 50
 BATCH_SIZE = 64
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 
 
 ## train data
@@ -64,6 +65,8 @@ test_data = testData(torch.FloatTensor(X_test))
 
 train_loader = DataLoader(dataset=train_data, batch_size=BATCH_SIZE, shuffle=True)
 test_loader = DataLoader(dataset=test_data, batch_size=1)
+
+##################################################### Build Model #####################################################
 
 # Binary classification
 class BinaryClassification(nn.Module):
@@ -105,7 +108,8 @@ def binary_acc(y_pred, y_test):
 
     return acc
 
-# 3) Training loop
+
+##################################################### Train Model #####################################################
 model.train()
 for e in range(1, EPOCHS + 1):
     epoch_loss = 0
@@ -126,6 +130,8 @@ for e in range(1, EPOCHS + 1):
         epoch_acc += acc.item()
 
     print(f'Epoch {e + 0:03}: | Loss: {epoch_loss / len(train_loader):.5f} | Acc: {epoch_acc / len(train_loader):.3f}')
+
+#################################################### Evaluate Model ####################################################
 
 y_pred_list = []
 model.eval()
