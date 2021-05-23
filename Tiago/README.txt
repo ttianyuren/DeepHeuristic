@@ -10,7 +10,7 @@ Tutorial: How to create urdf-files from urdf.xacro
 3) copy Tiago folder from DeepHeuristic Project:
 	- Folder has to be copied in src-folder in the catkin_ws/src-folder
 4) in catkin/src/-folder:
-	- cd to Tiago/tiago_description
+	- cd to tiago
 5) create urdf file:
 	- rosrun xacro xacro tiago_description/robots/tiago.urdf.xacro > tiago_single.urdf
 
