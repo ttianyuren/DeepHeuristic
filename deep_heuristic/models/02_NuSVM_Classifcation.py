@@ -1,6 +1,6 @@
 from sklearn.svm import NuSVC
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix
-from deep_heuristic.visualize_training_data import split_data
+from deep_heuristic.utils import split_data
 import pickle as pk
 import matplotlib.pyplot as plt
 

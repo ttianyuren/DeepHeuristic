@@ -1,6 +1,5 @@
 import numpy as np
-
-from deep_heuristic.visualize_training_data import split_data
+from deep_heuristic.utils import split_data
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix
 import pickle as pk

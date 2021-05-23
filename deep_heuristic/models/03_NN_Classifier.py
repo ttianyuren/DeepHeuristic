@@ -1,4 +1,4 @@
-from deep_heuristic.visualize_training_data import split_data
+from deep_heuristic.utils import split_data
 import pickle as pk
 import numpy as np
 import matplotlib.pyplot as plt
