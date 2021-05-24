@@ -3,7 +3,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix
 import numpy as np
 import matplotlib.pyplot as plt
-from deep_heuristic.utils import split_data
+from deep_heuristic.nn_utils import split_data
 
 file_reach = '../training_data/reach.pk'
 # all_data = read_pickle(file_reach)
@@ -40,8 +40,7 @@ plt.xlabel('x')
 plt.ylabel('Distance')
 # ax.plot(np.degrees(train_data_x_true), train_data_w_true, '.', color='red')
 # ax.plot(np.degrees(train_data_x_false), train_data_w_false, '.', color='blue')
-"""
-"""
+
 ########## show 3D data
 fig = plt.figure(figsize=(8, 6))
 from mpl_toolkits.mplot3d import Axes3D

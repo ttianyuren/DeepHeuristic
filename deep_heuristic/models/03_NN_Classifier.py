@@ -1,86 +1,55 @@
-from deep_heuristic.utils import split_data
-import pickle as pk
+from deep_heuristic.nn_utils import split_data, load_workspace, binary_acc, TrainData, TestData
 import numpy as np
 import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
 
+EPOCHS = 10
+BATCH_SIZE = 64
+LEARNING_RATE = 0.001
+
 ################################################## Data Preprocessing ##################################################
 
-file_reach = '../training_data/reach.pk'
-with open(file_reach, 'rb') as f:
-    all_data = pk.load(f)
-
-train_data, train_labels, eval_data, eval_labels = split_data(all_data, test_size=0.2, num_of_param=3)
+train_data, train_labels, eval_data, eval_labels = split_data(load_workspace(), test_size=0.2, num_of_param=3)
 
 
 scaler = StandardScaler()
 X_train = scaler.fit_transform(train_data)
 X_test = scaler.transform(eval_data)
 
-EPOCHS = 50
-BATCH_SIZE = 64
-LEARNING_RATE = 0.001
-
-
 ## train data
-class trainData(Dataset):
-
-    def __init__(self, X_data, y_data):
-        self.X_data = X_data
-        self.y_data = y_data
-
-    def __getitem__(self, index):
-        return self.X_data[index], self.y_data[index]
-
-    def __len__(self):
-        return len(self.X_data)
-
-
-train_data = trainData(torch.FloatTensor(X_train),
+train_data = TrainData(torch.FloatTensor(X_train),
                        torch.FloatTensor(train_labels))
 
-
 ## test data
-class testData(Dataset):
-
-    def __init__(self, X_data):
-        self.X_data = X_data
-
-    def __getitem__(self, index):
-        return self.X_data[index]
-
-    def __len__(self):
-        return len(self.X_data)
-
-
-test_data = testData(torch.FloatTensor(X_test))
+test_data = TestData(torch.FloatTensor(X_test))
 
 train_loader = DataLoader(dataset=train_data, batch_size=BATCH_SIZE, shuffle=True)
 test_loader = DataLoader(dataset=test_data, batch_size=1)
 
 ##################################################### Build Model #####################################################
 
+
 # Binary classification
 class BinaryClassification(nn.Module):
     def __init__(self):
         super(BinaryClassification, self).__init__()
         # Number of input features is 12.
-        self.layer_1 = nn.Linear(3, 24)
-        self.layer_2 = nn.Linear(24, 24)
-        self.layer_out = nn.Linear(24, 1)
+        self.layer_1 = nn.Linear(3, 12)
+        self.layer_2 = nn.Linear(12, 4)
+        self.layer_out = nn.Linear(4, 1)
 
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=0.1)
-        self.batchnorm1 = nn.BatchNorm1d(24)
-        self.batchnorm2 = nn.BatchNorm1d(24)
+        self.batchnorm1 = nn.BatchNorm1d(12)
+        self.batchnorm2 = nn.BatchNorm1d(4)
 
     def forward(self, inputs):
         x = self.relu(self.layer_1(inputs))
@@ -91,22 +60,14 @@ class BinaryClassification(nn.Module):
         x = self.layer_out(x)
         return x
 
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
 model = BinaryClassification()
 model.to(device)
 print(model)
 criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-
-
-def binary_acc(y_pred, y_test):
-    y_pred_tag = torch.round(torch.sigmoid(y_pred))
-
-    correct_results_sum = (y_pred_tag == y_test).sum().float()
-    acc = correct_results_sum / y_test.shape[0]
-    acc = torch.round(acc * 100)
-
-    return acc
 
 
 ##################################################### Train Model #####################################################
