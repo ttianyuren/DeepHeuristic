@@ -1,0 +1,17 @@
+Epoch 5000: | Loss: 0.15328 | Acc: 92.134
+              precision    recall  f1-score   support
+         0.0       0.94      0.84      0.88      1555
+         1.0       0.60      0.81      0.69       467
+    accuracy                           0.83      2022
+   macro avg       0.77      0.82      0.78      2022
+weighted avg       0.86      0.83      0.84      2022
+
+Epoch 1000: | Loss: 0.21167 | Acc: 89.710
+              precision    recall  f1-score   support
+
+         0.0       0.93      0.82      0.87      1555
+         1.0       0.57      0.79      0.66       467
+
+    accuracy                           0.81      2022
+   macro avg       0.75      0.81      0.77      2022
+weighted avg       0.85      0.81      0.82      2022
