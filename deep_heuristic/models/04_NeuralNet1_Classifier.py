@@ -1,5 +1,5 @@
 import numpy as np
-from deep_heuristic.nn_utils import split_data
+from deep_heuristic.nn_utils import split_data, load_workspace
 import torch
 import torch.nn as nn
 import pickle as pk

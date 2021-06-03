@@ -9,7 +9,7 @@ def load_workspace(file_reach='../training_data/reach.pk'):
         return pk.load(f)
 
 
-def load_collision(file_reach='../training_data/reach.pk'):
+def load_collision(file_reach='../training_data/direction.pk'):
     with open(file_reach, 'rb') as f:
         return pk.load(f)
 
@@ -19,12 +19,11 @@ def binary_acc(y_predicted, y_test):
     return torch.round(correct_results_sum / y_test.shape[0] * 100)
 
 
-def split_data(raw_data, test_size=0.1, num_of_param=1):
+def split_data(raw_data, test_size=0.1, num_of_param=1, shuffle=False):
     raw_data = np.array(raw_data)
-    np.random.shuffle(raw_data)
-    data = np.array([])
-    for i in raw_data:
-        data = np.append(data, np.array(i[0]))
+    if shuffle:
+        np.random.shuffle(raw_data)
+    data = np.array([list(x) for x in raw_data[:, 0]])
     data = np.reshape(data, (-1, num_of_param))
     train_length = int(len(data) * (1 - test_size))
     train_data_in = data[:train_length]

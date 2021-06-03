@@ -19,7 +19,6 @@ LEARNING_RATE = 0.001
 
 train_data, train_labels, eval_data, eval_labels = split_data(load_workspace(), test_size=0.2, num_of_param=3)
 
-
 scaler = StandardScaler()
 X_train = scaler.fit_transform(train_data)
 X_test = scaler.transform(eval_data)
