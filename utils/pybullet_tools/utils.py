@@ -71,7 +71,8 @@ def is_remote():
 
 
 def is_darwin():  # TODO: change loading accordingly
-    return platform.system() == 'Darwin'  # platform.release()
+    return True
+    # return platform.system() == 'Darwin'  # platform.release()
     # return sys.platform == 'darwin'
 
 
@@ -88,7 +89,13 @@ def write(filename, string):
 def read_pickle(filename):
     # Can sometimes read pickle3 from python2 by calling twice
     # Can possibly read pickle2 from python3 by using encoding='latin1'
-    with open(filename, 'rb') as f:
+    destination = filename + "_"
+    with open(filename, 'rb') as infile:
+        content = infile.read()
+    with open(destination, 'wb') as output:
+        for line in content.splitlines():
+            output.write(line + str.encode('\n'))
+    with open(destination, 'rb',) as f:
         return pickle.load(f)
 
 
