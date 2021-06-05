@@ -71,8 +71,13 @@ def is_remote():
 
 
 def is_darwin():  # TODO: change loading accordingly
-    return platform.system() == 'Darwin'  # platform.release()
-    # return sys.platform == 'darwin'
+    if platform.system() == 'Windows':
+        return platform.system() == 'Windows' 
+    elif platform.system() == 'MacOS':
+        return platform.system() == 'MacOS'
+
+    #return platform.system() == 'Darwin'  # platform.release()
+    return sys.platform == 'darwin'
 
 
 def read(filename):
@@ -328,16 +333,19 @@ def get_urdf_flags(cache=False):
     # flags = p.URDF_INITIALIZE_SAT_FEATURES | p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES
     flags = 0
     if cache:
-        flags |= p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES
+        flags |= p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES           #merge with or command
     return flags
 
 
-def load_pybullet(filename, fixed_base=False, scale=1., **kwargs):
+def load_pybullet(filename, fixed_base=False, position=[0, 0, 0], startOrientation=[0, 0, 0], scale=1., **kwargs):
     # fixed_base=False implies infinite base mass
     with LockRenderer():
         if filename.endswith('.urdf'):
+            startOrientationRPY = [0,0,0]
+            startOrientation = p.getQuaternionFromEuler(startOrientationRPY)
+
             flags = get_urdf_flags(**kwargs)
-            body = p.loadURDF(filename, useFixedBase=fixed_base, flags=flags,
+            body = p.loadURDF(filename, useFixedBase=fixed_base, basePosition=position, baseOrientation=startOrientation, flags=flags,
                               globalScaling=scale, physicsClientId=CLIENT)
         elif filename.endswith('.sdf'):
             body = p.loadSDF(filename, physicsClientId=CLIENT)
@@ -538,6 +546,7 @@ def connect(use_gui=True, shadows=True):
     # Shared Memory: execute the physics simulation and rendering in a separate process
     # https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/examples/vrminitaur.py#L7
     # make sure to compile pybullet with PYBULLET_USE_NUMPY enabled
+
     if use_gui and not is_darwin() and ('DISPLAY' not in os.environ):
         use_gui = False
         print('No display detected!')
@@ -1402,6 +1411,7 @@ def joint_from_name(body, name):
     dict_name_joint = {}
     for joint in joints:
         dict_name_joint[get_joint_name(body, joint)] = joint
+
     for joint in joints:
         # _name = get_joint_name(body, joint)
         # if name in _name:
@@ -1637,9 +1647,13 @@ parent_link_from_joint = get_link_parent
 
 
 def link_from_name(body, name):
+    #print("base_name: ", get_base_name(body))
+    #print("get_joint: ", get_joints(body))
+    #print("name: ", name)
     if name == get_base_name(body):
         return BASE_LINK
     for link in get_joints(body):
+        #print("link_name: ", get_link_name(body, link))
         if get_link_name(body, link) == name:
             return link
     raise ValueError(body, name)

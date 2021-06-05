@@ -102,3 +102,22 @@ def pr2_inverse_kinematics(robot, arm, gripper_pose, obstacles=[], custom_limits
     if any(pairwise_collision(robot, b) for b in obstacles):
         return None
     return get_joint_positions(robot, arm_joints)
+
+
+def tiago_inverse_kinematics(robot, arm, gripper_pose, obstacles=[], custom_limits={}, **kwargs):
+    arm_link = get_gripper_link(robot, arm)
+    arm_joints = get_arm_joints(robot, 'arm')
+    if is_ik_compiled():
+        ik_joints = get_torso_arm_joints(robot, arm)
+        torso_arm_conf = sample_tool_ik(robot, arm, gripper_pose, custom_limits=custom_limits,
+                                        torso_limits=USE_CURRENT, **kwargs)
+        if torso_arm_conf is None:
+            return None
+        set_joint_positions(robot, ik_joints, torso_arm_conf)
+    else:
+        arm_conf = sub_inverse_kinematics(robot, arm_joints[0], arm_link, gripper_pose, custom_limits=custom_limits)
+        if arm_conf is None:
+            return None
+    if any(pairwise_collision(robot, b) for b in obstacles):
+        return None
+    return get_joint_positions(robot, arm_joints)

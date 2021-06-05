@@ -11,7 +11,7 @@ import numpy as np
 #from ikfast.pr2.ik import is_ik_compiled, pr2_inverse_kinematics
 #from ikfast.utils import USE_CURRENT, USE_ALL
 #from pr2_problems import get_fixed_bodies
-from Tiago.tiago_utils import get_group_conf, get_side_grasps, learned_pose_generator, \
+from Tiago.tiago_utils import Tiago_limits, get_group_conf, get_side_grasps, learned_pose_generator, \
                               get_top_grasps, get_joints_from_body, get_gripper_link, \
                               LEFT_GRAP, RIGHT_GRAP, BACK_GRAP, FRONT_GRAP, TOP_GRAP, open_arm, joints_from_names
 from utils.pybullet_tools.utils import *
@@ -108,7 +108,7 @@ class sdg_ik_grasp(object):
     def __init__(self, scn, max_attempts=25, learned=True, teleport=False, **kwargs):
         self.max_attempts = max_attempts
 
-        self.ir_sampler = get_ir_sampler(scn, learned=learned, max_attempts=1, **kwargs)    #return gen_fn-function
+        self.ir_sampler = get_ir_sampler(scn, custom_limits=Tiago_limits, learned=learned, max_attempts=1, **kwargs)    #return gen_fn-function
         self.ik_fn = get_ik_fn(scn, teleport=teleport, **kwargs)                            #return fn-function
 
     def search(self, input_tuple, seed=None):
@@ -429,7 +429,7 @@ def get_ir_sampler(scn, custom_limits={}, max_attempts=25, collisions=True, lear
         default_conf = grasp.carry
         arm_joints = get_joints_from_body(robot, "arm")
         print("arm: ", arm_joints)
-        base_joints = get_joints_from_body(robot, 'base')
+        base_joints = get_joints_from_body(robot, 'base')[0]
         print("base: ", base_joints)
         if learned:
             base_generator = learned_pose_generator(robot, gripper_pose, grasp_type=grasp.grasp_type)
@@ -463,10 +463,10 @@ def get_ik_fn(scn, custom_limits={}, collisions=True, teleport=False):
     robot = scn.robots[0]
     fixed_movable = scn.all_bodies
 
-    """if is_ik_compiled():
+    if is_ik_compiled():
         print('Using ikfast for inverse kinematics')
     else:
-        print('Using pybullet for inverse kinematics')"""
+        print('Using pybullet for inverse kinematics')
 
     def fn(arm, obj, pose, grasp, base_conf):
         obstacles = list(set(fixed_movable) - {obj})

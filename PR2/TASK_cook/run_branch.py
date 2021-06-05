@@ -20,14 +20,11 @@ from utils.pybullet_tools.utils import WorldSaver, connect, get_pose, set_pose, 
     get_distance, LockRenderer, get_min_limit, get_max_limit
 # from etamp.progressive3 import solve_progressive, solve_progressive2
 from etamp.pddlstream.utils import read, INF, get_file_path, find_unique
-from etamp.pddlstream.language.constants import pAtom
 
 from etamp.p_uct2 import PlannerUCT
 from etamp.tree_node2 import ExtendedNode
 from etamp.env_sk_branch import SkeletonEnv
-from build_scenario import PlanningScenario
-from etamp.topk_skeleton import EXE_Action, EXE_Stream
-from etamp.pddlstream.language.object import Object, OptimisticObject, EXE_Object, EXE_OptimisticObject, get_hash
+from PR2.TASK_cook.build_scenario import PlanningScenario
 
 
 def get_fixed(robot, movable):
@@ -201,8 +198,8 @@ def main():
     """TODO: Here operators should be implemented"""
     stream_info = {'sample-place': StreamInfo(seed_gen_fn=sdg_sample_place(scn), every_layer=15,
                                               free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),
-                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn)),  # TODO: need a stream to generate 5 grasp direction
-                   'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn)),  # TODO: need a stream to generate base pose
+                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn)),
+                   'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn)),
                    'plan-base-motion': StreamInfo(seed_gen_fn=sdg_motion_base_joint(scn)),
                    }
 
@@ -211,81 +208,15 @@ def main():
                    'pick': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
                    }
 
+
     st = time.time()
 
-    # with open('C_operatorPlans/C_op_sas.1.pk', 'rb') as f:
-    #     op_plan = pk.load(f)
-
-    print(scn.movable_bodies)
-
-    robot = scn.robots[0]  # TODO: need to be Tiago
-    arm = 'left'
-    body = 6  # [5, 6, 7, 8, 9, 10, 11, 12, 13]
-    region = 4  # [3, 4]
-    pose = BodyPose(body, get_pose(body))
-    joints = get_arm_joints(robot, arm)
-    conf = Conf(robot, joints, get_joint_positions(robot, joints))
-
-    oBody = EXE_Object(pddl='o' + str(body), value=body)
-    oRegion = EXE_Object(pddl='o' + str(region), value=region)
-    oArm = EXE_Object(pddl='\'left\'', value='left')
-    oBodyPose = EXE_Object(pddl='pInit' + str(body), value=pose)  # p72
-    oConf = EXE_Object(pddl='qInit', value=conf)  # q800
-
-    # open variables
-    voG0 = EXE_OptimisticObject(pddl='#g0', repr_name='#g0', value=None)
-    voQ0 = EXE_OptimisticObject(pddl='#q0', repr_name='#q0', value=None)
-    voT1 = EXE_OptimisticObject(pddl='#t1', repr_name='#t1', value=None)
-    voQ11 = EXE_OptimisticObject(pddl='#q11', repr_name='#q11', value=None)
-    voT85 = EXE_OptimisticObject(pddl='#t85', repr_name='#t85', value=None)
-    voT480 = EXE_OptimisticObject(pddl='#t480', repr_name='#t480', value=None)
-    voT37 = EXE_OptimisticObject(pddl='#t37', repr_name='#t37', value=None)
-    voT12 = EXE_OptimisticObject(pddl='#t12', repr_name='#t12', value=None)
-    voP2 = EXE_OptimisticObject(pddl='#p2', repr_name='#p2', value=None)
-
-    #TODO: Here op_plan should be hardcoded for the Tiago task, as shown in page13 of IP_DeepHeuristic.pdf"""
-    op_plan = [EXE_Stream(inputs=(oBody,),
-                          name='sample-grasp',
-                          outputs=(voG0,)),
-               EXE_Stream(inputs=(oArm, oBody, oBodyPose, voG0,),
-                          name='inverse-kinematics',
-                          outputs=(voQ0, voT1,)),
-               EXE_Stream(inputs=(oConf, voQ0,),
-                          name='plan-base-motion',
-                          outputs=(voT37,)),
-               EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ0,)),),
-                          name='move_base',
-                          parameters=(oConf, voQ0, voT37,)),
-               EXE_Action(add_effects=(pAtom(name='atgrasp', args=(oArm, oBody, voG0,)),),
-                          name='pick',
-                          parameters=(oArm, oBody, oBodyPose, voG0, voQ0, voT1,)),
-               EXE_Stream(inputs=(oBody, oRegion,),
-                          name='sample-place',
-                          outputs=(voP2,)),
-               EXE_Stream(inputs=(oArm, oBody, voP2, voG0,),
-                          name='inverse-kinematics',
-                          outputs=(voQ11, voT12,)),
-               EXE_Stream(inputs=(voQ0, voQ11,),
-                          name='plan-base-motion',
-                          outputs=(voT85,)),
-               EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ11,)),),
-                          name='move_base',
-                          parameters=(voQ0, voQ11, voT85,)),
-               EXE_Action(add_effects=(pAtom(name='atpose', args=(oBody, voP2,)),),
-                          name='place',
-                          parameters=(oArm, oBody, voP2, voG0, voQ11, voT12,)),
-               EXE_Stream(inputs=(voQ11, oConf,),
-                          name='plan-base-motion',
-                          outputs=(voT480,)),
-               EXE_Action(add_effects=(pAtom(name='atbconf', args=(oConf,)),),
-                          name='move_base',
-                          parameters=(voQ11, oConf, voT480,)),
-               ]
+    with open('C_operatorPlans/C_op_sas.1.pk', 'rb') as f:
+            op_plan = pk.load(f)
+    """TODO: Here op_plan should be hardcoded for the Tiago task"""
 
     e_root = ExtendedNode()
     assert op_plan is not None
-
-    """Here use tree search to bind open variables"""
     skeleton_env = SkeletonEnv(e_root.num_children, op_plan,
                                get_update_env_reward_fn(scn, action_info),
                                stream_info, scn)

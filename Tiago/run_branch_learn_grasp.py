@@ -11,7 +11,9 @@ import time
 from etamp.actions import ActionInfo
 from etamp.stream import StreamInfo
 
-from Tiago.tiago_utils import get_joints_from_body
+
+from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf, get_joints_from_body, Tiago_limits
+
 from Tiago.tiago_primitives import BodyPose, sdg_sample_place, sdg_sample_grasp, sdg_ik_grasp, sdg_motion_base_joint
 
 from utils.pybullet_tools.pr2_primitives import  Conf, get_ik_ir_gen, get_motion_gen, \
@@ -19,7 +21,7 @@ from utils.pybullet_tools.pr2_primitives import  Conf, get_ik_ir_gen, get_motion
     get_gripper_joints, GripperCommand, apply_commands, State, Command
 
 from utils.pybullet_tools.pr2_utils import get_arm_joints, ARM_NAMES,  get_group_joints, get_group_conf
-from utils.pybullet_tools.utils import WorldSaver,step_simulation,  connect, get_pose, set_pose, get_configuration, is_placement, \
+from utils.pybullet_tools.utils import WorldSaver, is_connected,step_simulation,  connect, get_pose, set_pose, get_configuration, is_placement, \
     disconnect, get_bodies, connect, get_pose, is_placement, point_from_pose, \
     disconnect, user_input, get_joint_positions, enable_gravity, save_state, restore_state, HideOutput, \
     get_distance, LockRenderer, get_min_limit, get_max_limit
@@ -201,8 +203,8 @@ def main():
                    'pick': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
                    }
     robot = scn.robots[0]
-
-    for i in range(10000):
+    i =0
+    while(is_connected()):
     ### SETUP: Position and Orientation of Box, Table, robot, IDs are bodys
         box_id = 3  # Box 1-3 ID                    
         box_pose = BodyPose(box_id, get_pose(box_id))
@@ -217,7 +219,6 @@ def main():
         step_simulation()
         #time.sleep(0.5)
         if(i%1200 == 0):
-            from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf
             initial_conf = get_initial_conf('top')
             position = [0, -0.8, 0]
             startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
@@ -238,6 +239,7 @@ def main():
                 p.resetBasePositionAndOrientation(box_id, [x, y, 0.58 + 0.1 / 2], p.getQuaternionFromEuler(startOrientationRPY))
 
             load_start_position()
+        i = i + 1
 
 
 
