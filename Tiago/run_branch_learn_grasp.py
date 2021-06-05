@@ -204,7 +204,7 @@ def main():
 
     for i in range(10000):
     ### SETUP: Position and Orientation of Box, Table, robot, IDs are bodys
-        box_id = 3  # Box 1-3 IDs= [3, 4, 5]                        #TODO can be randomize
+        box_id = 3  # Box 1-3 ID                    
         box_pose = BodyPose(box_id, get_pose(box_id))
 
         table_id = 1  # table 
@@ -212,10 +212,34 @@ def main():
 
         box_grasp = stream_info['sample-grasp'].seed_gen_fn((box_id,))
         learn_grasp = stream_info['inverse-kinematics'].seed_gen_fn((box_id, box_pose, box_grasp[0]))
-        print("i: ", i, learn_grasp)
+        print("i: ", i)
 
         step_simulation()
         #time.sleep(0.5)
+        if(i%1200 == 0):
+            from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf
+            initial_conf = get_initial_conf('top')
+            position = [0, -0.8, 0]
+            startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
+
+            p.resetBasePositionAndOrientation(robot, position, startOrientation)
+
+            #Configure Arm Position and Torso Position in the beginning of the simulation
+            set_group_conf(robot, 'arm', initial_conf)
+            open_arm(robot)
+
+            #set random box position and orientation
+            def load_start_position():
+                x = np.random.uniform(-0.3, 0.3) 
+                y = np.random.uniform(-0.25, -0.45)
+
+                w = np.random.uniform(0, 2 * np.pi)
+                startOrientationRPY = [0, 0, w]
+                p.resetBasePositionAndOrientation(box_id, [x, y, 0.58 + 0.1 / 2], p.getQuaternionFromEuler(startOrientationRPY))
+
+            load_start_position()
+
+
 
 
     """connect(use_gui=True)
