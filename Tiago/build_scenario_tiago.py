@@ -33,7 +33,7 @@ def place_movable(certified):
 class PlanningScenario(object):
     def __init__(self):
         with HideOutput():
-            self.robot = load_pybullet("/Tiago/tiago_description/tiago_dual.urdf",
+            self.robot = load_pybullet("./tiago_description/tiago_single.urdf",
                                        fixed_base=True)
 
 

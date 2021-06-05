@@ -30,7 +30,7 @@ class BuildWorldScenario(object):
                 self.grasp_type = 'top'
 
                 """ Load Table in the simulation"""
-                self.table = load_model('utils/models/table_collision/table.urdf', fixed_base=True)
+                self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
                 
                 """ Load floor to simulation """
                 self.floor = load_model('utils/models/short_floor.urdf', fixed_base=True)
@@ -42,7 +42,7 @@ class BuildWorldScenario(object):
                 
                 self.tiago = load_pybullet("Tiago/tiago_description/tiago.urdf", 
                                             position=startPosition, 
-                                            fixed_base=True)
+                                            fixed_base=False)
 
                 self.setStartPositionAndOrienation(self.tiago, startPosition, startOrientation)
 

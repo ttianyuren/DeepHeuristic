@@ -223,8 +223,8 @@ def gather_training_data():
     tdata_workspace = []
     tdata_collision = []
 
-    file_reach = 'training_data/reach.pk'
-    file_direction = 'training_data/direction.pk'
+    file_reach = 'reach.pk'
+    file_direction = 'direction.pk'
 
     if os.path.exists(file_reach):
         with open(file_reach, 'rb') as f:

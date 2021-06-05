@@ -3,23 +3,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix
 import numpy as np
 import matplotlib.pyplot as plt
+from deep_heuristic.nn_utils import split_data
 
-
-def split_data(raw_data, test_size=0.1):
-    raw_data = np.array(raw_data, dtype=object)
-    np.random.shuffle(raw_data)
-    data = np.array([])
-    for i in raw_data:
-        data = np.append(data, np.array(i[0], dtype=np.float))
-    data = np.reshape(data, (-1, 3))
-    train_length = int(len(data) * (1-test_size))
-    train_data_in = data[:train_length]
-    train_labels_in = raw_data[:train_length, 1]
-    eval_data_in = data[train_length:]
-    eval_labels_in = raw_data[train_length:, 1]
-    return train_data_in, train_labels_in.astype('bool'), eval_data_in, eval_labels_in.astype('bool')
-
-"""
 file_reach = '../training_data/reach.pk'
 # all_data = read_pickle(file_reach)
 with open(file_reach, 'rb') as f:
@@ -55,8 +40,7 @@ plt.xlabel('x')
 plt.ylabel('Distance')
 # ax.plot(np.degrees(train_data_x_true), train_data_w_true, '.', color='red')
 # ax.plot(np.degrees(train_data_x_false), train_data_w_false, '.', color='blue')
-"""
-"""
+
 ########## show 3D data
 fig = plt.figure(figsize=(8, 6))
 from mpl_toolkits.mplot3d import Axes3D
@@ -80,4 +64,3 @@ for ii in range(0, 360, 30):
         plt.savefig("movie%d.png" % ii)
         
 plt.show()
-"""
