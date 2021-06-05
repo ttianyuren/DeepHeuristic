@@ -338,6 +338,7 @@ def get_urdf_flags(cache=False):
 
 
 def load_pybullet(filename, fixed_base=False, position=[0, 0, 0], startOrientation=[0, 0, 0], scale=1., **kwargs):
+    filename = get_model_path(filename)
     # fixed_base=False implies infinite base mass
     with LockRenderer():
         if filename.endswith('.urdf'):
@@ -383,9 +384,28 @@ URDF_FLAGS = [p.URDF_USE_INERTIA_FROM_FILE,
               p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS]
 
 
-def get_model_path(rel_path):  # TODO: add to search path
-    directory = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(directory, '..', rel_path)
+
+def get_operating_system():
+    return platform.system()
+        
+
+def up_directory(file):
+    return os.path.dirname(file)
+
+
+def get_model_path(path):  # TODO: add to search path
+    operating_system = get_operating_system()
+
+    if operating_system == "Windows":
+        dir = up_directory(up_directory(up_directory(os.path.abspath(__file__))))
+        path = os.path.abspath(path).replace("C:", '')                              #Path has to change in Windows-file-system-format
+
+        return dir + path
+    else:
+        pass    #TODO check for other operating systems like MacOS or UNIX
+        dir = up_directory(os.path.abspath(__file__))
+        return os.path.join(dir, '..', path) 
+
 
 
 def load_model(rel_path, pose=None, **kwargs):
