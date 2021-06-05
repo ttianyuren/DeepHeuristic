@@ -59,8 +59,6 @@ class BuildWorldScenario(object):
                 mass = 1        #in kg
                 self.bd_body = {
                     "box1": create_box(.07, .07, .1, mass=mass, color=(1, 0, 0, 1)),
-                    "box2": create_box(.07, .07, .1, mass=mass, color=(0, 1, 0, 1)),
-                    "box3": create_box(.07, .07, .1, mass=mass, color=(0, 0, 1, 1)),
                 }
 
                 self.bd_body.update(dict((self.bd_body[k], k) for k in self.bd_body))
@@ -68,7 +66,7 @@ class BuildWorldScenario(object):
 
                 enable_gravity()
         
-        self.movable_bodies = [self.bd_body['box1'], self.bd_body['box2'], self.bd_body['box3']]
+        self.movable_bodies = [self.bd_body['box1']]
         self.env_bodies = [self.floor]
         self.regions = [self.table]
 
@@ -100,12 +98,8 @@ class BuildWorldScenario(object):
 
     def setBoxPositionAndOrientation(self):
         box1_pos = [-0.3, -0.3, self.pos_table[2] + 0.1 / 2]#self.load_random_box_position()
-        box2_pos = [0, -0.3, self.pos_table[2] + 0.1 / 2]#self.load_random_box_position()
-        box3_pos = [0.3, -0.3, self.pos_table[2] + 0.1 / 2]#self.load_random_box_position()
-
         self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
-        self.setStartPositionAndOrienation(self.bd_body['box2'], box2_pos, self.load_start_orientation())
-        self.setStartPositionAndOrienation(self.bd_body['box3'], box3_pos, self.load_start_orientation())
+
 
     def load_random_box_position(self):
         x = np.random.uniform(-self.table_config[0] / 2, self.table_config[0] / 2)
