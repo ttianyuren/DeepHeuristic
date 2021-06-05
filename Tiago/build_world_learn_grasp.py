@@ -30,29 +30,29 @@ class BuildWorldScenario(object):
                 self.grasp_type = 'top'
 
                 """ Load Table in the simulation"""
-                self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
+                self.table = load_model('C:/Users/marin/Desktop/DeepHeuristicTAMP/utils/models/table_collision/table.urdf', fixed_base=True)
                 
                 """ Load floor to simulation """
-                self.floor = load_model('utils/models/short_floor.urdf', fixed_base=True)
+                self.floor = load_model('C:/Users/marin/Desktop/DeepHeuristicTAMP/utils/models/short_floor.urdf', fixed_base=True)
 
 
                 """ TIAGO ROBOT INIZIALIZATION """
-                startPosition = self.load_start_position()
-                startOrientation = self.load_start_orientation()
+                startPosition = [0, -0.8, 0]
+                startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
                 
-                self.tiago = load_pybullet("Tiago/tiago_description/tiago.urdf", 
+                self.tiago = load_pybullet("C:/Users/marin/Desktop/DeepHeuristicTAMP/Tiago/tiago_description/tiago.urdf", 
                                             position=startPosition, 
-                                            fixed_base=False)
+                                            fixed_base=True)
 
                 self.setStartPositionAndOrienation(self.tiago, startPosition, startOrientation)
 
-                initial_conf = get_initial_conf('rest')
+                initial_conf = get_initial_conf('top')
 
                 #Configure Arm Position and Torso Position in the beginning of the simulation
                 set_group_conf(self.tiago, 'arm', initial_conf)
                 close_arm(self.tiago)                              
                 open_arm(self.tiago)                                
-                set_group_conf(self.tiago, 'torso', [0.2])          
+                set_group_conf(self.tiago, 'torso', [0.35])          
 
 
                 """ Load Boxes to Simulations """
@@ -72,7 +72,8 @@ class BuildWorldScenario(object):
         self.env_bodies = [self.floor]
         self.regions = [self.table]
 
-        self.all_bodies = list(set(self.movable_bodies) | set(self.env_bodies) | set(self.regions))
+        self.all_bodies = list(set(self.movable_bodies) | set(self.env_bodies) | set(self.regions))     #all ids in model/body [0, 1, 2, ...]
+
 
         self.sensors = []
         self.robots = [self.tiago]
@@ -98,9 +99,9 @@ class BuildWorldScenario(object):
 
 
     def setBoxPositionAndOrientation(self):
-        box1_pos = self.load_random_box_position()
-        box2_pos = self.load_random_box_position()
-        box3_pos = self.load_random_box_position()
+        box1_pos = [-0.3, -0.3, self.pos_table[2] + 0.1 / 2]#self.load_random_box_position()
+        box2_pos = [0, -0.3, self.pos_table[2] + 0.1 / 2]#self.load_random_box_position()
+        box3_pos = [0.3, -0.3, self.pos_table[2] + 0.1 / 2]#self.load_random_box_position()
 
         self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
         self.setStartPositionAndOrienation(self.bd_body['box2'], box2_pos, self.load_start_orientation())

@@ -6,6 +6,7 @@ import cProfile
 import pstats
 import argparse
 import pickle as pk
+import pybullet as p
 import time
 from etamp.actions import ActionInfo
 from etamp.stream import StreamInfo
@@ -17,8 +18,8 @@ from utils.pybullet_tools.pr2_primitives import  Conf, get_ik_ir_gen, get_motion
     get_stable_gen, get_grasp_gen, Attach, Detach, Clean, Cook, control_commands, \
     get_gripper_joints, GripperCommand, apply_commands, State, Command
 
-from utils.pybullet_tools.pr2_utils import get_arm_joints, ARM_NAMES, get_group_joints, get_group_conf
-from utils.pybullet_tools.utils import WorldSaver, connect, get_pose, set_pose, get_configuration, is_placement, \
+from utils.pybullet_tools.pr2_utils import get_arm_joints, ARM_NAMES,  get_group_joints, get_group_conf
+from utils.pybullet_tools.utils import WorldSaver,step_simulation,  connect, get_pose, set_pose, get_configuration, is_placement, \
     disconnect, get_bodies, connect, get_pose, is_placement, point_from_pose, \
     disconnect, user_input, get_joint_positions, enable_gravity, save_state, restore_state, HideOutput, \
     get_distance, LockRenderer, get_min_limit, get_max_limit
@@ -29,7 +30,7 @@ from etamp.pddlstream.language.constants import pAtom
 from etamp.p_uct2 import PlannerUCT
 from etamp.tree_node2 import ExtendedNode
 from etamp.env_sk_branch import SkeletonEnv
-from Tiago.build_world import BuildWorldScenario
+from Tiago.build_world_learn_grasp import BuildWorldScenario
 from etamp.topk_skeleton import EXE_Action, EXE_Stream
 from etamp.pddlstream.language.object import Object, OptimisticObject, EXE_Object, EXE_OptimisticObject, get_hash
 
@@ -183,15 +184,15 @@ def play_commands(commands):
 #######################################################
 
 def main():
-    visualization = 0
+    visualization = 1
     connect(use_gui=visualization)
     scn = BuildWorldScenario()
 
     """TODO: Here operators should be implemented"""
     stream_info = {'sample-place': StreamInfo(seed_gen_fn=sdg_sample_place(scn), every_layer=15,
-                                              free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),
+                                              free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),      # kann ignoriert werden. set box on random position on table for example. Keep in mind, z-position is wrong 
                    'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn)),     # TODO: need a stream to generate 5 grasp direction
-                   'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn))#,  # TODO: need a stream to generate base pose
+                   'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn, learned=False))#,  # TODO: need a stream to generate base pose
                    #'plan-base-motion': StreamInfo(seed_gen_fn=sdg_motion_base_joint(scn)),
                    }
 
@@ -199,13 +200,37 @@ def main():
                    'place': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
                    'pick': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
                    }
+    robot = scn.robots[0]
 
-    st = time.time()
+    for i in range(10000):
+    ### SETUP: Position and Orientation of Box, Table, robot, IDs are bodys
+        box_id = 3  # Box 1-3 IDs= [3, 4, 5]                        #TODO can be randomize
+        box_pose = BodyPose(box_id, get_pose(box_id))
 
-    #with open('PR2/TASK_cook/C_operatorPlans/C_op_sas.1.pk', 'rb') as f:
-    #     op_plan = pk.load(f)
-    #print(op_plan)
-    #print("stream_info: ", stream_info['sample-place'])
+        table_id = 1  # table 
+        table_pose = BodyPose(table_id, get_pose(table_id))
+
+        box_grasp = stream_info['sample-grasp'].seed_gen_fn((box_id,))
+        learn_grasp = stream_info['inverse-kinematics'].seed_gen_fn((box_id, box_pose, box_grasp[0]))
+        print("i: ", i, learn_grasp)
+
+        step_simulation()
+        #time.sleep(0.5)
+
+
+    """connect(use_gui=True)
+    
+    scn = BuildWorldScenario()
+    scn.get_elemetns()"""
+
+    
+        
+        
+
+    """with open('PR2/TASK_cook/C_operatorPlans/C_op_sas.1.pk', 'rb') as f:
+         op_plan = pk.load(f)
+    print(op_plan)
+    print("stream_info: ", stream_info['sample-place'])
 
     robot = scn.robots[0]
 
@@ -239,7 +264,7 @@ def main():
     voT480 = EXE_OptimisticObject(pddl='#t480', repr_name='#t480', value=None)
     voT37 = EXE_OptimisticObject(pddl='#t37', repr_name='#t37', value=None)
     voT12 = EXE_OptimisticObject(pddl='#t12', repr_name='#t12', value=None)
-    voP2 = EXE_OptimisticObject(pddl='#p2', repr_name='#p2', value=None)
+    voP2 = EXE_OptimisticObject(pddl='#p2', repr_name='#p2', value=None)"""
 
 
 
@@ -324,7 +349,7 @@ def main():
 
     play_commands(commands)
     """
-    disconnect()
+    #disconnect()
 
     print('Finished.')
 

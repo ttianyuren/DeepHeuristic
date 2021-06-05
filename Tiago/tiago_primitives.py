@@ -11,8 +11,14 @@ import numpy as np
 #from ikfast.pr2.ik import is_ik_compiled, pr2_inverse_kinematics
 #from ikfast.utils import USE_CURRENT, USE_ALL
 #from pr2_problems import get_fixed_bodies
-from Tiago.tiago_utils import open_arm, joints_from_names
+from Tiago.tiago_utils import get_group_conf, get_side_grasps, learned_pose_generator, \
+                              get_top_grasps, get_joints_from_body, get_gripper_link, \
+                              LEFT_GRAP, RIGHT_GRAP, BACK_GRAP, FRONT_GRAP, TOP_GRAP, open_arm, joints_from_names
 from utils.pybullet_tools.utils import *
+
+
+from utils. pybullet_tools.ikfast.tiago.ik import *
+
 
 BASE_EXTENT = 3.5  # 2.5
 BASE_LIMITS = (-BASE_EXTENT * np.ones(2), BASE_EXTENT * np.ones(2))
@@ -23,16 +29,25 @@ SELF_COLLISIONS = False
 
 #######################################################
 
-#Diese Classe läd nur alle Objekte (Tisch, Boxen und boden) in 
+
 class sdg_sample_place(object):
     def __init__(self, scn):
         self.all_bodies = scn.all_bodies
 
     def __call__(self, input_tuple, seed=None):
-        body, surface = input_tuple     #robot, oberfläche???
+        """
+            Args Description: set object random of a place
+                input_tuple: tuple of body_target-object and body_object where the target object should placed in
+
+            return:
+                body_grasp: position and orientation of target-object
+        """
+        body, surface = input_tuple     #robot, oberfläche --> tiago robot???
         others = list(set(self.all_bodies) - {body, surface})
+        
         """1) Generation"""
         pose = sample_placement_seed(body, surface, seed)
+        print("pose: ", pose)
         """2) Validation"""
         if (pose is None) or any(pairwise_collision(body, b) for b in others):
             return None
@@ -43,9 +58,16 @@ class sdg_sample_place(object):
 
 class sdg_sample_grasp(object):
     def __init__(self, scn):
-        self.robot, self.arm, self.grasp_type = scn.pr2, scn.arms[0], scn.grasp_type
+        self.robot, self.grasp_type = scn.robots[0], scn.grasp_type
 
     def search(self, input_tuple, seed=None):
+        """
+            Args description: 
+                input_tuple: box-object id that should be grasp
+
+            return
+                body_grasp: 
+        """
         """return the ee_frame wrt the measure_frame of the object"""
         body, = input_tuple  # grasp_dir defined in ellipsoid_frame of the body
 
@@ -53,12 +75,19 @@ class sdg_sample_grasp(object):
 
         if 'top' == self.grasp_type:
             approach_vector = APPROACH_DISTANCE * get_unit_vector([1, 0, 0])
-            grasps.extend(Grasp('top', body, g, multiply((approach_vector, unit_quat()), g), TOP_HOLDING_LEFT_ARM)
-                          for g in get_top_grasps(body, grasp_length=GRASP_LENGTH))
+            grasps.extend(Grasp('top', body, g, multiply((approach_vector, unit_quat()), g), TOP_GRAP)
+                          for g in get_top_grasps(body, grasp_length=GRASP_LENGTH))                     #from gripper to object with a specific joint angles
         if 'side' == self.grasp_type:
             approach_vector = APPROACH_DISTANCE * get_unit_vector([2, 0, -1])
-            grasps.extend(Grasp('side', body, g, multiply((approach_vector, unit_quat()), g), SIDE_HOLDING_LEFT_ARM)
+            grasps.extend(Grasp('side', body, g, multiply((approach_vector, unit_quat()), g), LEFT_GRAP)
                           for g in get_side_grasps(body, grasp_length=GRASP_LENGTH))
+
+        if 'front' == self.grasp_type: #TODO not finished
+            approach_vector = APPROACH_DISTANCE * get_unit_vector([2, 0, -1])           #TODO get_unit_vector ????
+            grasps.extend(Grasp('side', body, g, multiply((approach_vector, unit_quat()), g), FRONT_GRAP)
+                          for g in get_side_grasps(body, grasp_length=GRASP_LENGTH))        #TODO change get_side_graps
+
+
         filtered_grasps = []
         for grasp in grasps:
             grasp_width = 0.0
@@ -79,12 +108,22 @@ class sdg_ik_grasp(object):
     def __init__(self, scn, max_attempts=25, learned=True, teleport=False, **kwargs):
         self.max_attempts = max_attempts
 
-        self.ir_sampler = get_ir_sampler(scn, learned=learned, max_attempts=1, **kwargs)
-        self.ik_fn = get_ik_fn(scn, teleport=teleport, **kwargs)
+        self.ir_sampler = get_ir_sampler(scn, learned=learned, max_attempts=1, **kwargs)    #return gen_fn-function
+        self.ik_fn = get_ik_fn(scn, teleport=teleport, **kwargs)                            #return fn-function
 
     def search(self, input_tuple, seed=None):
-        b, a, p, g = input_tuple
-        ir_generator = self.ir_sampler(*input_tuple)
+        """
+            Args: 
+                input_tuple:
+                    b: body_id of the object, that should be moved
+                    a: ????
+                    p: pose is a tuple of position and orientation of movable box 
+                    g: grasp object of movable box
+            return:
+                None ???
+        """
+        b, p, g = input_tuple                            #b = body, a = ?, p = pose, g = grasp 
+        ir_generator = self.ir_sampler(*input_tuple)        #object, pose and grasp
         attempts = 0
 
         for i in range(self.max_attempts):
@@ -196,3 +235,311 @@ class Conf(object):
 
     def __repr__(self):
         return 'q{}'.format(id(self) % 1000)
+
+
+
+
+#####################################
+
+class Command(object):
+    def control(self, dt=0):
+        raise NotImplementedError()
+
+    def apply(self, state, **kwargs):
+        raise NotImplementedError()
+
+    def iterate(self):
+        raise NotImplementedError()
+
+
+class Commands(object):
+    def __init__(self, state, savers=[], commands=[]):
+        self.state = state
+        self.savers = tuple(savers)
+        self.commands = tuple(commands)
+
+    def assign(self):
+        for saver in self.savers:
+            saver.restore()
+        return copy.copy(self.state)
+
+    def apply(self, state, **kwargs):
+        for command in self.commands:
+            for result in command.apply(state, **kwargs):
+                yield result
+
+    def __repr__(self):
+        return 'c{}'.format(id(self) % 1000)
+
+
+
+
+#####################################
+
+def get_target_point(conf):
+    # TODO: use full body aabb
+    robot = conf.body
+    link = link_from_name(robot, 'torso_lift_link')
+    # link = BASE_LINK
+    # TODO: center of mass instead?
+    # TODO: look such that cone bottom touches at bottom
+    # TODO: the target isn't the center which causes it to drift
+    with BodySaver(conf.body):
+        conf.assign()
+        lower, upper = get_aabb(robot, link)
+        center = np.average([lower, upper], axis=0)
+        point = np.array(get_group_conf(conf.body, 'base'))
+        # point[2] = upper[2]
+        point[2] = center[2]
+        # center, _ = get_center_extent(conf.body)
+        return point
+
+
+def get_target_path(trajectory):
+    # TODO: only do bounding boxes for moving links on the trajectory
+    return [get_target_point(conf) for conf in trajectory.path]
+
+
+#######################################################
+
+#####################################
+
+
+
+class Trajectory(Command):
+    _draw = False
+
+    def __init__(self, path):
+        self.path = tuple(path)
+        # TODO: constructor that takes in this info
+
+    def apply(self, state, sample=1):
+        handles = add_segments(self.to_points()) if self._draw and has_gui() else []
+        for conf in self.path[::sample]:
+            conf.assign()
+            yield
+        end_conf = self.path[-1]
+        if isinstance(end_conf, BodyPose):
+            state.poses[end_conf.body] = end_conf
+        for handle in handles:
+            remove_debug(handle)
+
+    def control(self, dt=0, **kwargs):
+        # TODO: just waypoints
+        for conf in self.path:
+            if isinstance(conf, BodyPose):
+                conf = conf.to_base_conf()
+            for _ in joint_controller_hold(conf.body, conf.joints, conf.values):
+                step_simulation()
+                time.sleep(dt)
+
+    def to_points(self, link=BASE_LINK):
+        # TODO: this is computationally expensive
+        points = []
+        for conf in self.path:
+            with BodySaver(conf.body):
+                conf.assign()
+                # point = np.array(point_from_pose(get_link_pose(conf.body, link)))
+                point = np.array(get_group_conf(conf.body, 'base'))
+                point[2] = 0
+                point += 1e-2 * np.array([0, 0, 1])
+                if not (points and np.allclose(points[-1], point, atol=1e-3, rtol=0)):
+                    points.append(point)
+        points = get_target_path(self)
+        return waypoints_from_path(points)
+
+    def distance(self, distance_fn=get_distance):
+        total = 0.
+        for q1, q2 in zip(self.path, self.path[1:]):
+            total += distance_fn(q1.values, q2.values)
+        return total
+
+    def iterate(self):
+        for conf in self.path:
+            yield conf
+
+    def reverse(self):
+        return Trajectory(reversed(self.path))
+
+    # def __repr__(self):
+    #    return 't{}'.format(id(self) % 1000)
+    def __repr__(self):
+        d = 0
+        if self.path:
+            conf = self.path[0]
+            d = 3 if isinstance(conf, BodyPose) else len(conf.joints)
+        return 't({},{})'.format(d, len(self.path))
+
+
+
+def create_trajectory(robot, joints, path):
+    return Trajectory(Conf(robot, joints, q) for q in path)
+
+
+
+class Grasp(object):
+    def __init__(self, grasp_type, body, value, approach, carry):
+        self.grasp_type = grasp_type
+        self.body = body
+        self.value = tuple(value)  # gripper_from_object
+        self.approach = tuple(approach)
+        self.carry = tuple(carry)
+
+    def attachment(self, robot):
+        tool_link = link_from_name(robot, "gripper_grasping_frame") #TODO???? tool_frames
+        return Attachment(robot, tool_link, self.value, self.body)
+
+    def __repr__(self):
+        return 'g{}'.format(id(self) % 1000)
+
+
+
+"""
+root link: *_gripper_palm_link    --> arm_tool_link, gripper_tool_link, gripper_link, gripper_grasping_frame
+tool_link: *_gripper_tool_frame   --> 
+"""
+def iterate_approach_path(robot, pose, grasp, body=None):
+    root_link = link_from_name(robot, 'gripper_tool_link')        #TODO ?
+    tool_link = link_from_name(robot, "gripper_grasping_frame") #TODO ?
+    tool_from_root = multiply(invert(get_link_pose(robot, tool_link)),
+                              get_link_pose(robot, root_link))
+    grasp_pose = multiply(pose.value, invert(grasp.value))
+    approach_pose = multiply(pose.value, invert(grasp.approach))
+    for tool_pose in interpolate_poses(grasp_pose, approach_pose):
+        set_pose(body, multiply(tool_pose, tool_from_root))
+        if body is not None:
+            set_pose(body, multiply(tool_pose, grasp.value))
+        yield
+
+
+
+def get_ir_sampler(scn, custom_limits={}, max_attempts=25, collisions=True, learned=True):
+    robot = scn.robots[0]
+    fixed_movable = scn.all_bodies
+
+    def gen_fn(obj, pose, grasp):
+        obstacles = list(set(fixed_movable) - {obj})
+        pose.assign()
+        approach_obstacles = {obst for obst in obstacles if (not is_placement(obj, obst))}
+
+        for _ in iterate_approach_path(robot, pose, grasp, body=obj):
+            if any(pairwise_collision(obj, b) for b in approach_obstacles):             #TODO pairwise_collision(b) or ???
+                return
+        gripper_pose = multiply(pose.value, invert(grasp.value))  # w_f_g = w_f_o * (g_f_o)^-1
+        default_conf = grasp.carry
+        arm_joints = get_joints_from_body(robot, "arm")
+        print("arm: ", arm_joints)
+        base_joints = get_joints_from_body(robot, 'base')
+        print("base: ", base_joints)
+        if learned:
+            base_generator = learned_pose_generator(robot, gripper_pose, grasp_type=grasp.grasp_type)
+        else:
+            base_generator = uniform_pose_generator(robot, gripper_pose)
+        lower_limits, upper_limits = get_custom_limits(robot, base_joints, custom_limits)
+        while True:
+            count = 0
+            for base_conf in islice(base_generator, max_attempts):
+                count += 1
+                if not all_between(lower_limits, base_conf, upper_limits):
+                    continue
+                bq = Conf(robot, base_joints, base_conf)
+                pose.assign()
+                bq.assign()
+                set_joint_positions(robot, arm_joints, default_conf)
+                if any(pairwise_collision(robot, b) for b in obstacles + [obj]):
+                    continue
+                # print('IR attempts:', count)
+                yield (bq,)
+                break
+            else:
+                yield None
+
+    return gen_fn
+
+
+##################################################
+
+def get_ik_fn(scn, custom_limits={}, collisions=True, teleport=False):
+    robot = scn.robots[0]
+    fixed_movable = scn.all_bodies
+
+    """if is_ik_compiled():
+        print('Using ikfast for inverse kinematics')
+    else:
+        print('Using pybullet for inverse kinematics')"""
+
+    def fn(arm, obj, pose, grasp, base_conf):
+        obstacles = list(set(fixed_movable) - {obj})
+        approach_obstacles = {obst for obst in obstacles if not is_placement(obj, obst)}
+        gripper_pose = multiply(pose.value, invert(grasp.value))  # w_f_g = w_f_o * (g_f_o)^-1
+        # approach_pose = multiply(grasp.approach, gripper_pose)
+        approach_pose = multiply(pose.value, invert(grasp.approach))
+        arm_link = get_gripper_link(robot, arm)
+        arm_joints = get_joints_from_body(robot, 'arm')
+
+        default_conf =  grasp.carry
+        # sample_fn = get_sample_fn(robot, arm_joints)
+        pose.assign()
+        base_conf.assign()
+        open_arm(robot, arm)
+        set_joint_positions(robot, arm_joints, default_conf)  # default_conf | sample_fn()
+        grasp_conf = tiago_inverse_kinematics(robot, arm, gripper_pose,
+                                            custom_limits=custom_limits)  # , upper_limits=USE_CURRENT)
+        # nearby_conf=USE_CURRENT) # upper_limits=USE_CURRENT,
+        if (grasp_conf is None) or any(pairwise_collision(robot, b) for b in obstacles):  # [obj]
+            # print('Grasp IK failure', grasp_conf)
+            # if grasp_conf is not None:
+            #    print(grasp_conf)
+            #    #wait_for_user()
+            return None
+        # approach_conf = pr2_inverse_kinematics(robot, arm, approach_pose, custom_limits=custom_limits,
+        #                                       upper_limits=USE_CURRENT, nearby_conf=USE_CURRENT)
+        approach_conf = sub_inverse_kinematics(robot, arm_joints[0], arm_link, approach_pose,
+                                               custom_limits=custom_limits)
+        if (approach_conf is None) or any(pairwise_collision(robot, b) for b in obstacles + [obj]):
+            # print('Approach IK failure', approach_conf)
+            # wait_for_user()
+            return None
+        approach_conf = get_joint_positions(robot, arm_joints)
+        attachment = grasp.attachment(robot, arm)
+        attachments = {attachment.child: attachment}
+        if teleport:
+            path = [default_conf, approach_conf, grasp_conf]
+        else:
+            resolutions = 0.05 ** np.ones(len(arm_joints))
+            grasp_path = plan_direct_joint_motion(robot, arm_joints, grasp_conf, attachments=attachments.values(),
+                                                  obstacles=approach_obstacles, self_collisions=SELF_COLLISIONS,
+                                                  custom_limits=custom_limits, resolutions=resolutions / 2.)
+            if grasp_path is None:
+                print('Grasp path failure')
+                return None
+            set_joint_positions(robot, arm_joints, default_conf)
+            approach_path = plan_joint_motion(robot, arm_joints, approach_conf, attachments=attachments.values(),
+                                              obstacles=obstacles, self_collisions=SELF_COLLISIONS,
+                                              custom_limits=custom_limits, resolutions=resolutions,
+                                              restarts=2, iterations=25, smooth=25)
+            if approach_path is None:
+                print('Approach path failure')
+                return None
+            path = approach_path + grasp_path
+        mt = create_trajectory(robot, arm_joints, path)
+        cmd = Commands(State(attachments=attachments), savers=[BodySaver(robot)], commands=[mt])
+        return (cmd,)
+
+    return fn
+
+
+
+class State(object):
+    def __init__(self, attachments={}, cleaned=set(), cooked=set()):
+        self.poses = {body: BodyPose(body, get_pose(body))
+                      for body in get_bodies() if body not in attachments}
+        self.grasps = {}
+        self.attachments = attachments
+        self.cleaned = cleaned
+        self.cooked = cooked
+
+    def assign(self):
+        for attachment in self.attachments.values():
+            # attach.attachment.assign()
+            attachment.assign()
