@@ -30,10 +30,10 @@ class BuildWorldScenario(object):
                 self.grasp_type = 'top'
 
                 """ Load Table in the simulation"""
-                self.table = load_model('utils/models/table_collision/table.urdf', fixed_base=True)
+                self.table = load_pybullet('utils/models/table_collision/table.urdf', fixed_base=True)
                 
                 """ Load floor to simulation """
-                self.floor = load_model('utils/models/short_floor.urdf', fixed_base=True)
+                self.floor = load_pybullet('utils/models/short_floor.urdf', fixed_base=True)
 
 
                 """ TIAGO ROBOT INIZIALIZATION """

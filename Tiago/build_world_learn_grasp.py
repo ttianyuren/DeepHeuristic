@@ -30,17 +30,17 @@ class BuildWorldScenario(object):
                 self.grasp_type = 'top'
 
                 """ Load Table in the simulation"""
-                self.table = load_model('C:/Users/marin/Desktop/DeepHeuristicTAMP/utils/models/table_collision/table.urdf', fixed_base=True)
+                self.table = load_pybullet('/utils/models/table_collision/table.urdf', fixed_base=True)
                 
                 """ Load floor to simulation """
-                self.floor = load_model('C:/Users/marin/Desktop/DeepHeuristicTAMP/utils/models/short_floor.urdf', fixed_base=True)
+                self.floor = load_pybullet('/utils/models/short_floor.urdf', fixed_base=True)
 
 
                 """ TIAGO ROBOT INIZIALIZATION """
                 startPosition = [0, -0.8, 0]
                 startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
                 
-                self.tiago = load_pybullet("C:/Users/marin/Desktop/DeepHeuristicTAMP/Tiago/tiago_description/tiago.urdf", 
+                self.tiago = load_pybullet("/Tiago/tiago_description/tiago.urdf", 
                                             position=startPosition, 
                                             fixed_base=True)
 
