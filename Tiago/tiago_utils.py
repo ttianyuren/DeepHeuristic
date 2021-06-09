@@ -131,6 +131,15 @@ CARRY_ARM_CONF = {
     'right_side': RIGHT_GRAP 
 }
 
+TIAGO_TOOL_FRAMES = {
+    'tiago': 'arm_tool_link'
+}
+
+"""
+root link: *_gripper_palm_link    --> arm_tool_link, gripper_tool_link, gripper_link, gripper_grasping_frame
+tool_link: *_gripper_tool_frame   --> 
+"""
+
 
 """GET_GRASPS = {
     'top': get_top_grasps,

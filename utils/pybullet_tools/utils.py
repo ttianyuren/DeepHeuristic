@@ -344,7 +344,7 @@ def load_pybullet(filename, fixed_base=False, position=[0, 0, 0], startOrientati
         if filename.endswith('.urdf'):
             startOrientationRPY = [0,0,0]
             startOrientation = p.getQuaternionFromEuler(startOrientationRPY)
-
+            print(filename)
             flags = get_urdf_flags(**kwargs)
             body = p.loadURDF(filename, useFixedBase=fixed_base, basePosition=position, baseOrientation=startOrientation, flags=flags,
                               globalScaling=scale, physicsClientId=CLIENT)
@@ -1236,6 +1236,7 @@ BodyInfo = namedtuple('BodyInfo', ['base_name', 'body_name'])
 
 
 def get_body_info(body):
+    a = BodyInfo(*p.getBodyInfo(body, physicsClientId=CLIENT))
     return BodyInfo(*p.getBodyInfo(body, physicsClientId=CLIENT))
 
 
@@ -2824,8 +2825,8 @@ def body_collision(body1, body2, max_distance=MAX_DISTANCE, visualization=False)
             body = test[1]
             link = test[3]
             add_text('{}-{}'.format(body, link), test[5], color=(1, 0.3, 0.3), lifetime=2)
-            # draw_point(test[5], size=0.05, color=(1, 0.5, 0.5), width=2, lifetime=1)
-            # draw_point(test[6], size=0.05, color=(0.5, 1, 0.5), width=2, lifetime=1)
+            draw_point(test[5], size=0.05, color=(1, 0.5, 0.5), width=2, lifetime=10)
+            draw_point(test[6], size=0.05, color=(0.5, 1, 0.5), width=2, lifetime=10)
             dist = test[8]
 
     return len(results) != 0  # getContactPoints`
