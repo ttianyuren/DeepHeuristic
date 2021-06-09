@@ -55,13 +55,13 @@ PR2_GROUPS = {
 HEAD_LINK_NAME = 'high_def_optical_frame'  # high_def_optical_frame | high_def_frame | wide_stereo_l_stereo_camera_frame
 # kinect - 'head_mount_kinect_rgb_optical_frame' | 'head_mount_kinect_rgb_link'
 
-PR2_TOOL_FRAMES = {
+PR2_TOOL_FRAMES = { # mittelpunkt des gripper für greifen der zange
     'left': 'l_gripper_tool_frame',  # l_gripper_palm_link | l_gripper_tool_frame
     'right': 'r_gripper_tool_frame',  # r_gripper_palm_link | r_gripper_tool_frame
     'head': HEAD_LINK_NAME,
 }
 
-PR2_GRIPPER_ROOTS = {
+PR2_GRIPPER_ROOTS = { #palm line ist die position des greifes
     'left': 'l_gripper_palm_link',
     'right': 'r_gripper_palm_link',
 }

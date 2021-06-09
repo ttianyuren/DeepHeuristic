@@ -335,11 +335,12 @@ def get_urdf_flags(cache=False):
     # flags = p.URDF_INITIALIZE_SAT_FEATURES | p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES
     flags = 0
     if cache:
-        flags |= p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES
+        flags |= p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES           #merge with or command
     return flags
 
 
-def load_pybullet(filename, fixed_base=False, scale=1., **kwargs):
+def load_pybullet(filename, fixed_base=False, position=[0, 0, 0], startOrientation=[0, 0, 0], scale=1., **kwargs):
+    filename = get_model_path(filename)
     # fixed_base=False implies infinite base mass
     with LockRenderer():
         if filename.endswith('.urdf'):

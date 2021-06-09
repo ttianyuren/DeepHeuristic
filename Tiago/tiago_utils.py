@@ -28,7 +28,7 @@ from utils.pybullet_tools.utils import multiply, get_link_pose, joint_from_name,
 
 #Webot https://cyberbotics.com/doc/guide/tiago-steel
 Tiago_GROUPS = {
-    'base': ['x', 'y', 'theta'],
+    'base': ['base_footprint_joint'],
     'torso': ['torso_lift_joint'],                                              #ID: 24
     'head': ['head_1_joint', 'head_2_joint'], 
     'arm': ['arm_1_joint', 'arm_2_joint', 'arm_3_joint', 'arm_4_joint',         #ID: 34, 35, 36
@@ -57,6 +57,19 @@ def get_database_file(filename):
 #####################################################
 ########### NOT NEEDED ##############################
 
+Tiago_limits = {
+    'arm_joint_1': [0.07, 2.68],
+    'arm_joint_2': [-1.5, 1.02],
+    'arm_joint_3': [-3.46, 1.5],
+    'arm_joint_4': [-0.32, 2.27],
+    'arm_joint_5': [-2.07, 2.07],
+    'arm_joint_6': [-1.39, 1.39],
+    'arm_joint_7': [-2.07, 2.07], 
+    'gripper_left_finger_joint': [0, 0.05],
+    'gripper_right_finger_joint': [0, 0.05]
+}
+
+
 Tiago_arm_limits = {
     'arm_joint_1': [0.07, 2.68],
     'arm_joint_2': [-1.5, 1.02],
@@ -68,8 +81,8 @@ Tiago_arm_limits = {
 }
 
 Tiago_head_limits = {
-    'joint_1': [-1.24, 1.24], 
-    'joint_2': [-0.98, 0.79]
+    'head_1_joint': [-1.24, 1.24], 
+    'head_2_joint': [-0.98, 0.79]
 }
 
 Tiago_gripper_limits = {
@@ -78,12 +91,12 @@ Tiago_gripper_limits = {
 }
 
 Tiago_torso_limits = {
-    'joint_1': [0, 0.35]
+    'torso_lift_joint': [0, 0.35]
 }
 
 Tiago_wheel_limits = {
-    'left': [-3.14, 3.14],
-    'right': [-3.14, 3.14]
+    'wheel_left_joint': [-3.14, 3.14],
+    'wheel_right_joint': [-3.14, 3.14]
 }
 
 #####################################################
@@ -117,6 +130,15 @@ CARRY_ARM_CONF = {
     'left_side': LEFT_GRAP,
     'right_side': RIGHT_GRAP 
 }
+
+TIAGO_TOOL_FRAMES = {
+    'tiago': 'arm_tool_link'
+}
+
+"""
+root link: *_gripper_palm_link    --> arm_tool_link, gripper_tool_link, gripper_link, gripper_grasping_frame
+tool_link: *_gripper_tool_frame   --> 
+"""
 
 
 """GET_GRASPS = {

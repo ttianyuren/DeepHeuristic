@@ -47,6 +47,7 @@ class BodyPose(object):
         if value is None:
             value = get_pose(self.body)
         self.value = tuple(value)
+        print(body, self.value)
         self.support = support
         self.init = init
 

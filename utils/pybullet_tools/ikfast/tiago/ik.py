@@ -22,9 +22,8 @@ UPPER_JOINT = {
 #####################################
 
 def get_tool_pose(robot, arm):
-    from .ikLeft import leftFK
-    from .ikRight import rightFK
-    arm_fk = {'left': leftFK, 'right': rightFK}
+    from .ikArm import armIK
+    arm_fk = {'arm': armIK}
     # TODO: compute static transform from base_footprint -> base_link
     ik_joints = get_torso_arm_joints(robot, arm)
     conf = get_joint_positions(robot, ik_joints)
@@ -38,16 +37,14 @@ def get_tool_pose(robot, arm):
 
 def is_ik_compiled():
     try:
-        from .ikLeft import leftIK
-        from .ikRight import rightIK
+        from .ikArm import armIK
         return True
     except ImportError:
         return False
 
 def get_ik_generator(robot, arm, ik_pose, torso_limits=USE_ALL, upper_limits=USE_ALL, custom_limits={}):
-    from .ikLeft import leftIK
-    from .ikRight import rightIK
-    arm_ik = {'left': leftIK, 'right': rightIK}
+    from .ikArm import armIK
+    arm_ik = {'arm': armIK}
     world_from_base = get_link_pose(robot, link_from_name(robot, BASE_FRAME))
     base_from_ik = multiply(invert(world_from_base), ik_pose)
     sampled_joints = [joint_from_name(robot, name) for name in [TORSO_JOINT, UPPER_JOINT[arm]]]
@@ -88,10 +85,10 @@ def sample_tool_ik(robot, arm, tool_pose, nearby_conf=USE_ALL, max_attempts=25, 
 
 #TODO CHANGE EVERYTHING
 def tiago_inverse_kinematics(robot, arm, gripper_pose, obstacles=[], custom_limits={}, **kwargs):
-    arm_link = get_gripper_link(robot, arm)
+    arm_link = get_gripper_link(robot, 'arm')
     arm_joints = get_arm_joints(robot, 'arm')
     if is_ik_compiled():
-        ik_joints = get_torso_arm_joints(robot, arm)
+        ik_joints = get_torso_arm_joints(robot, 'arm')
         torso_arm_conf = sample_tool_ik(robot, arm, gripper_pose, custom_limits=custom_limits,
                                         torso_limits=USE_CURRENT, **kwargs)
         if torso_arm_conf is None:
