@@ -15,7 +15,7 @@ from utils.pybullet_tools.body_utils import *
 #from pr2_problems import get_fixed_bodies
 from Tiago.tiago_utils import Tiago_limits, get_group_conf, get_side_grasps, learned_pose_generator, \
                               get_top_grasps, get_joints_from_body, get_gripper_link, \
-                              LEFT_GRAP, RIGHT_GRAP, BACK_GRAP, FRONT_GRAP, TOP_GRAP, TIAGO_TOOL_FRAMES, open_arm, joints_from_names
+                              LEFT_GRAP, RIGHT_GRAP, BACK_GRAP, FRONT_GRAP, TOP_GRAP, open_arm, joints_from_names
 from utils.pybullet_tools.utils import *
 
 
@@ -58,8 +58,6 @@ class sdg_sample_place(object):
         return (body_pose,)  # return a tuple
 
 
-
-
 class BodyGrasp(object):
     def __init__(self, body, grasp_pose, approach_pose, robot, attach_link):
         self.body = body
@@ -83,12 +81,15 @@ class BodyGrasp(object):
 class sdg_sample_grasp(object):
     def __init__(self, robot, dic_body_info):
         self.robot = robot
-        self.end_effector_link = link_from_name(robot, TIAGO_TOOL_FRAMES[get_body_name(robot)])
+        self.end_effector_link = link_from_name(robot, TOOL_FRAMES[get_body_name(robot)])
         self.dic_body_info = dic_body_info
 
     def search(self, input_tuple, seed=None):
         """return the ee_frame wrt the measure_frame of the object"""
         body, grasp_dir = input_tuple  # grasp_dir defined in ellipsoid_frame of the body
+
+        for i in range(0):
+            print(get_link_name(self.robot, i))
 
         assert body == grasp_dir.body
         grasp_dir = grasp_dir.direction
@@ -98,6 +99,9 @@ class sdg_sample_grasp(object):
         ellipsoid_frame, obj_extent, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(body, body_info,
                                                                                              self.robot)
         ex, ey, ez = obj_extent
+        # mat_image = get_raytest_scatter3(body, ellipsoid_frame, obj_extent, 2)
+        # plt.imshow(mat_image, 'gray', vmin=0, vmax=1)
+        # plt.show()
 
         translate_z = Pose(point=[0, 0, -0.001])
         list_grasp = []
@@ -105,23 +109,23 @@ class sdg_sample_grasp(object):
             """ee at +X of the ellipsoid_frame"""
             swap_z = Pose(euler=[0, -np.pi / 2, 0])
             # translate_point: choose from the grasping surface with 2 dof
-            d1, d2 = 0., 0.  # [-0.5, 0.5]
-            translate_point = Pose(point=[ex / 2, 0 + d1 * ey, ez / 2 + d2 * ez])
+            d0, d1, d2 = -.3, 0., .5  # [-0.5, 0.5]
+            translate_point = Pose(point=[ex / 2+ d0 * ez, 0 + d1 * ey, ez / 2 + d2 * ez])
             for j in range(2):
                 rotate_z = Pose(euler=[0, 0, j * np.pi])  # gripper open with +Y direction
                 grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
                 list_grasp.append(grasp)
 
-        elif grasp_dir == 'side':
+
+        elif grasp_dir == 'toppp':
             """ee at +Y"""
             swap_z = Pose(euler=[np.pi / 2, 0, 0])
-            d1, d2 = 0., 0.  # [-0.5, 0.5]
+            d1, d2 = 0., -0.  # [-0.5, 0.5]
             translate_point = Pose(point=[0 - d1 * ex, ey / 2, ez / 2 + d2 * ez])
             for j in range(2):
                 rotate_z = Pose(euler=[0, 0, j * np.pi + np.pi / 2])
                 grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
                 list_grasp.append(grasp)
-
 
         """ee_frame wrt ellipsoid_frame"""
         grasp_pose = random.sample(list_grasp, 1)[0]
@@ -134,57 +138,6 @@ class sdg_sample_grasp(object):
 
     def __call__(self, input_tuple, seed=None):
         return self.search(input_tuple, seed=None)
-
-
-class sdg_sample_grasp(object):
-    def __init__(self, scn):
-        self.robot, self.grasp_type = scn.robots[0], scn.grasp_type     #TODO Has to change
-        self.end_effector_link = link_from_name(self.robot, TIAGO_TOOL_FRAMES[get_body_name(self.robot)])
-
-    def search(self, input_tuple, seed=None):
-            #Args description: 
-            #    input_tuple: box-object id that should be grasp
-
-            #return
-            #    body_grasp: 
-    
-        #return the ee_frame wrt the measure_frame of the object
-        body, = input_tuple  # grasp_dir defined in ellipsoid_frame of the body
-
-        grasps = []
-
-        if 'top' == self.grasp_type:
-            approach_vector = APPROACH_DISTANCE * get_unit_vector([1, 0, 0])
-            grasps.extend(Grasp('top', body, g, multiply((approach_vector, unit_quat()), g), TOP_GRAP)
-                          for g in get_top_grasps(body, grasp_length=GRASP_LENGTH))                     #from gripper to object with a specific joint angles
-        if 'side' == self.grasp_type:
-            approach_vector = APPROACH_DISTANCE * get_unit_vector([2, 0, -1])
-            grasps.extend(Grasp('side', body, g, multiply((approach_vector, unit_quat()), g), LEFT_GRAP)
-                          for g in get_side_grasps(body, grasp_length=GRASP_LENGTH))
-
-        if 'front' == self.grasp_type: #TODO not finished
-            approach_vector = APPROACH_DISTANCE * get_unit_vector([2, 0, -1])           #TODO get_unit_vector ????
-            grasps.extend(Grasp('side', body, g, multiply((approach_vector, unit_quat()), g), FRONT_GRAP)
-                          for g in get_side_grasps(body, grasp_length=GRASP_LENGTH))        #TODO change get_side_graps
-
-
-        filtered_grasps = []
-        for grasp in grasps:
-            grasp_width = 0.0
-            if grasp_width is not None:
-                grasp.grasp_width = grasp_width
-                filtered_grasps.append(grasp)
-
-        random.shuffle(filtered_grasps)
-        body_grasp = filtered_grasps[0]
-
-        approach_pose = Pose(0.1 * Point(z=-1))  # pose bias wrt end-effector frame
-        body_grasp = BodyGrasp(body, body_grasp, approach_pose, self.robot, self.end_effector_link)
-        return (body_grasp,)  # return a tuple
-
-    def __call__(self, input_tuple, seed=None):
-        return self.search(input_tuple, seed=None)
-
 
 DISABLED_COLLISION_PAIR = {(5, 7)}
 
@@ -200,113 +153,13 @@ class GraspDirection(object):
         return 'gd{}'.format(id(self) % 1000)
 
 
-"""class sdg_ik_grasp(object):
-    def __init__(self, scn, max_attempts=25, learned=True, teleport=False, **kwargs):
-        self.max_attempts = max_attempts
-
-        self.ir_sampler = get_ir_sampler(scn, custom_limits=Tiago_limits, learned=learned, max_attempts=1, **kwargs)    #return gen_fn-function
-        self.ik_fn = get_ik_fn(scn, teleport=teleport, **kwargs)                            #return fn-function
-
-    def search(self, input_tuple, seed=None):
-        
-            #Args: 
-            #    input_tuple:
-            #        b: body_id of the object, that should be moved
-            #        a: ????
-            #        p: pose is a tuple of position and orientation of movable box 
-            #        g: grasp object of movable box
-            #return:
-            #    None ???
-        
-        b, p, g = input_tuple                            #b = body, a = ?, p = pose, g = grasp 
-        ir_generator = self.ir_sampler(*input_tuple)        #object, pose and grasp
-        attempts = 0
-
-        for i in range(self.max_attempts):
-            try:
-                ir_outputs = next(ir_generator)
-            except StopIteration:
-                return None
-            if ir_outputs is None:
-                continue
-            ik_outputs = self.ik_fn(*(input_tuple + ir_outputs))
-            if ik_outputs is None:
-                continue
-            # print('IK attempts:', attempts)
-            result = ir_outputs + ik_outputs
-            return result
-
-        return None
-
-    def __call__(self, input_tuple, seed=None):
-        return self.search(input_tuple, seed=None)
-"""
-
-
 class sdg_ik_grasp(object):
     def __init__(self, robot, all_bodies=[], teleport=False, num_attempts=30):
         self.all_bodies = all_bodies
         self.teleport = teleport
         self.num_attempts = num_attempts
         self.movable_joints = get_movable_joints(robot)
-        self.sample_fn = get_sample_fn(robot, self.movable_joints)
-        self.robot = robot
-        self.visualization_collision = False
-        self.max_distance = MAX_DISTANCE
-
-        movable_joints = get_movable_joints(robot)
-        sample_fn = get_sample_fn(robot, movable_joints)
-
-    def fn(body, pose, grasp):
-        """
-        :param pose: the pose of the object (body)
-        """
-        obstacles = list(set(self.all_bodies) - {grasp.body})
-        grasp_pose_ee = end_effector_from_body(pose.pose, grasp.grasp_pose)  # wrt world frame
-        approach_pose_ee = multiply(grasp_pose_ee, grasp.approach_pose)  # 右乘,以当前ee坐标系为基准进行变换
-
-        # approach_pose_ee = end_effector_from_body(pose.pose, grasp.approach_pose)
-
-        for _ in range(num_attempts):
-            sampled_conf = sample_fn()
-            set_joint_positions(robot, movable_joints, sampled_conf)  # Random seed
-            q_approach = inverse_kinematics(robot, grasp.link, approach_pose_ee)
-            if (q_approach is None) or any(pairwise_collision(robot, b) for b in obstacles):
-                continue
-            approach_conf = BodyConf(robot, q_approach)
-            q_grasp = inverse_kinematics(robot, grasp.link, grasp_pose_ee)
-            if (q_grasp is None) or any(pairwise_collision(robot, b) for b in obstacles):
-                continue
-            if teleport:
-                path = [q_approach, q_grasp]
-            else:
-                approach_conf.assign()
-                # The path from q_approach to q_grasp.
-                path = plan_direct_joint_motion(robot, approach_conf.joints, q_grasp,
-                                                obstacles=obstacles)
-                if path is None:
-                    if DEBUG_FAILURE:
-                        user_input('Approach motion failed')
-                    continue
-            command = Command([BodyPath(robot, path),
-                               Attach(body, robot, grasp.link),
-                               BodyPath(robot, path[::-1], attachments=[grasp])])
-            return approach_conf, command
-            # TODO: holding collisions
-        return None
-
-    return fn
-
-
-
-"""
-
-    def __init__(self, robot, all_bodies=[], teleport=False, num_attempts=30):
-        self.all_bodies = all_bodies
-        self.teleport = teleport
-        self.num_attempts = num_attempts
-        self.movable_joints = get_movable_joints(robot)
-        self.sample_fn = get_sample_fn(robot, self.movable_joints)
+        self.sample_fn = get_sample_fn(robot, self.movable_joints, custom_limits=Tiago_limits)
         self.robot = robot
         self.visualization_collision = False
         self.max_distance = MAX_DISTANCE
@@ -316,7 +169,7 @@ class sdg_ik_grasp(object):
 
         set_pose(body, pose.value)
 
-        obstacles = self.all_bodies
+        obstacles = list(set(self.all_bodies) - {grasp.body})
 
         grasp_pose_ee = multiply(pose.value, grasp.grasp_pose)  # in world frame
         approach_pose_ee = multiply(grasp_pose_ee, grasp.approach_pose)  # 右乘,以当前ee坐标系为基准进行变换
@@ -327,8 +180,8 @@ class sdg_ik_grasp(object):
         list_command_approach = []
 
         for _ in range(self.num_attempts):
-            sampled_conf = self.sample_fn()
-            set_joint_positions(self.robot, self.movable_joints, sampled_conf)  # Random seed
+            # sampled_conf = self.sample_fn()
+            # set_joint_positions(self.robot, self.movable_joints, sampled_conf)  # Random seed
 
             q_approach = inverse_kinematics(self.robot, grasp.link, approach_pose_ee)
             q_grasp = inverse_kinematics(self.robot, grasp.link, grasp_pose_ee)
@@ -391,7 +244,6 @@ class sdg_ik_grasp(object):
             return None
         else:
             return approach_conf, command
-"""
 
 
 class ApplyForce(object):

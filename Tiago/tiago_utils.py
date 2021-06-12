@@ -58,26 +58,29 @@ def get_database_file(filename):
 ########### NOT NEEDED ##############################
 
 Tiago_limits = {
-    'arm_joint_1': [0.07, 2.68],
-    'arm_joint_2': [-1.5, 1.02],
-    'arm_joint_3': [-3.46, 1.5],
-    'arm_joint_4': [-0.32, 2.27],
-    'arm_joint_5': [-2.07, 2.07],
-    'arm_joint_6': [-1.39, 1.39],
-    'arm_joint_7': [-2.07, 2.07], 
+    'arm_1_joint': [0.07, 2.68],
+    'arm_2_joint': [-1.5, 1.02],
+    'arm_3_joint': [-3.46, 1.5],
+    'arm_4_joint': [-0.32, 2.27],
+    'arm_5_joint': [-2.07, 2.07],
+    'arm_6_joint': [-1.39, 1.39],
+    'arm_7_joint': [-2.07, 2.07],
     'gripper_left_finger_joint': [0, 0.05],
-    'gripper_right_finger_joint': [0, 0.05]
+    'gripper_right_finger_joint': [0, 0.05],
+    'head_1_joint': [0, 0],
+    'head_2_joint': [0, 0],
+    'torso_lift_joint': [0, 0],
 }
 
 
 Tiago_arm_limits = {
-    'arm_joint_1': [0.07, 2.68],
-    'arm_joint_2': [-1.5, 1.02],
-    'arm_joint_3': [-3.46, 1.5],
-    'arm_joint_4': [-0.32, 2.27],
-    'arm_joint_5': [-2.07, 2.07],
-    'arm_joint_6': [-1.39, 1.39],
-    'arm_joint_7': [-2.07, 2.07], 
+    'arm_1_joint': [0.07, 2.68],
+    'arm_2_joint': [-1.5, 1.02],
+    'arm_3_joint': [-3.46, 1.5],
+    'arm_4_joint': [-0.32, 2.27],
+    'arm_5_joint': [-2.07, 2.07],
+    'arm_6_joint': [-1.39, 1.39],
+    'arm_7_joint': [-2.07, 2.07],
 }
 
 Tiago_head_limits = {
@@ -129,10 +132,6 @@ CARRY_ARM_CONF = {
     'top:': TOP_GRAP, 
     'left_side': LEFT_GRAP,
     'right_side': RIGHT_GRAP 
-}
-
-TIAGO_TOOL_FRAMES = {
-    'tiago': 'arm_tool_link'
 }
 
 """

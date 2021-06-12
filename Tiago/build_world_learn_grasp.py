@@ -14,9 +14,9 @@ from utils.pybullet_tools.utils import LockRenderer, enable_gravity, step_simula
     Pose, Point, set_default_camera, stable_z, SINK_URDF, STOVE_URDF, load_model, \
     disconnect, TABLE_URDF, get_bodies, HideOutput, create_box, load_pybullet, Euler, get_movable_joints, \
     set_joint_positions, set_point, load_pybullet, step_simulation, Euler, get_links, get_link_info, get_movable_joints, set_joint_positions, \
-    set_camera, get_center_extent, tform_from_pose, attach_viewcone, LockRenderer, load_model, set_point, get_pose
+    set_camera, get_center_extent, tform_from_pose, attach_viewcone, LockRenderer, load_model, set_point, get_pose, get_link_name
 
-from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf, create_gripper
+from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf
 
 
 
@@ -31,7 +31,7 @@ class BuildWorldScenario(object):
 
                 """ Load Table in the simulation"""
                 self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
-                
+
                 """ Load floor to simulation """
                 self.floor = load_model('../Tiago/scenario_description/plane.urdf', fixed_base=True)
 
@@ -40,13 +40,13 @@ class BuildWorldScenario(object):
                 startPosition = [0, -0.8, 0]
                 startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
                 
-                self.tiago = load_pybullet("../../Tiago/tiago_description/tiago.urdf",
+                self.tiago = load_pybullet("../Tiago/tiago_description/tiago.urdf",
                                             position=startPosition, 
                                             fixed_base=True)
 
                 self.setStartPositionAndOrienation(self.tiago, startPosition, startOrientation)
 
-                initial_conf = get_initial_conf('top')
+                initial_conf = get_initial_conf(self.grasp_type)
 
                 #Configure Arm Position and Torso Position in the beginning of the simulation
                 set_group_conf(self.tiago, 'arm', initial_conf)
@@ -58,14 +58,14 @@ class BuildWorldScenario(object):
                 """ Load Boxes to Simulations """
                 mass = 1        #in kg
                 self.bd_body = {
-                    "box1": create_box(.07, .07, .1, mass=mass, color=(0, 1, 0, 1)),
+                    "box1": create_box(.07, .07, .2, mass=mass, color=(0, 1, 0, 1)),
                 }
 
                 self.bd_body.update(dict((self.bd_body[k], k) for k in self.bd_body))
                 self.setBoxPositionAndOrientation()
 
                 enable_gravity()
-        
+
         self.movable_bodies = [self.bd_body['box1']]
         self.env_bodies = [self.floor]
         self.regions = [self.table]
@@ -91,12 +91,13 @@ class BuildWorldScenario(object):
             relative_frame_center = np.dot(center_frame, np.linalg.inv(body_frame))
 
             self.dic_body_info[b] = (obj_extent, relative_frame_bottom, relative_frame_center)
-        
+
+        set_camera(160, -35, 2.1, Point())
         self.saved_world = WorldSaver()
 
 
     def setBoxPositionAndOrientation(self):
-        box1_pos = [-0.3, -0.3, self.pos_table[2] + 0.1 / 2]#self.load_random_box_position()
+        box1_pos = [-0.1, -0.1, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
         self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
 
 
@@ -179,4 +180,3 @@ def display_scenario():
 
     disconnect()
     print('Finished.')
-    

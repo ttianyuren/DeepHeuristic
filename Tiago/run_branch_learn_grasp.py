@@ -191,7 +191,7 @@ def main():
     scn = BuildWorldScenario()
 
     robot = scn.robots[0]
-    box_id = 3  # Box 1-3 ID
+    box_id = scn.movable_bodies[0]
 
     ## TODO Calculate GraspDirection
 
@@ -214,16 +214,16 @@ def main():
         #set Grasp direction
         grasp_dir = GraspDirection(box_id, scn.grasp_type)
 
-        f_ik_grasp = sdg_ik_grasp(robot, scn.all_bodies)
+        # f_ik_grasp = sdg_ik_grasp(robot, scn.all_bodies)
 
         ### SETUP: Position and Orientation of Box, Table, robot, IDs are bodys                    
-        box_pose = BodyPose(box_id, get_pose(box_id)) 
-        box_grasp = stream_info['sample-grasp'].seed_gen_fn((box_id, ))
+        box_pose = BodyPose(box_id)
+        box_grasp = stream_info['sample-grasp'].seed_gen_fn((box_id, grasp_dir))[0]
 
         ik = stream_info['inverse-kinematics'].seed_gen_fn((box_id, box_pose, box_grasp))
-
+        if ik is not None:
+            print("ik:", ik)
         step_simulation()
-        #time.sleep(0.5)
         if(i % 1200 == 0):
             initial_conf = get_initial_conf('top')
             position = [0, -0.8, 0]
