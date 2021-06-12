@@ -1603,7 +1603,7 @@ def get_custom_limits(body, joints, custom_limits={}, circular_limits=UNBOUNDED_
         elif is_circular(body, joint):
             joint_limits.append(circular_limits)
         else:
-            joint_limits.append(NO_LIMITS)
+            joint_limits.append(get_joint_limits(body, joint))
     return zip(*joint_limits)
 
 
