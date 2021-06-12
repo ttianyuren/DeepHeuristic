@@ -1596,13 +1596,14 @@ def wrap_positions(body, joints, positions):
 
 def get_custom_limits(body, joints, custom_limits={}, circular_limits=UNBOUNDED_LIMITS):
     joint_limits = []
+    a = [get_joint_name(body, jointt) for jointt in joints]
     for joint in joints:
-        if joint in custom_limits:
-            joint_limits.append(custom_limits[joint])
+        if get_joint_name(body, joint) in custom_limits:
+            joint_limits.append(custom_limits[get_joint_name(body, joint)])
         elif is_circular(body, joint):
             joint_limits.append(circular_limits)
         else:
-            joint_limits.append(get_joint_limits(body, joint))
+            joint_limits.append(NO_LIMITS)
     return zip(*joint_limits)
 
 
@@ -2797,9 +2798,11 @@ def body_collision(body1, body2, max_distance=MAX_DISTANCE, visualization=False)
         for test in results:
             body = test[1]
             link = test[3]
-            add_text('{}-{}'.format(body, link), test[5], color=(1, 0.3, 0.3), lifetime=2)
-            # draw_point(test[5], size=0.05, color=(1, 0.5, 0.5), width=2, lifetime=1)
-            # draw_point(test[6], size=0.05, color=(0.5, 1, 0.5), width=2, lifetime=1)
+            add_text('{}-{}'.format(body, link), test[5], color=(1, 0.3, 0.3), lifetime=20)
+            print('{} -x- {}'.format(body, link), test[2], test[5])
+            print(get_link_name(body, link))
+            draw_point(test[5], size=0.05, color=(1, 0.5, 0.5), width=2, lifetime=20)
+            draw_point(test[6], size=0.05, color=(0.5, 1, 0.5), width=2, lifetime=20)
             dist = test[8]
 
     return len(results) != 0  # getContactPoints`
