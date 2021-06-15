@@ -191,7 +191,7 @@ def main():
     scn = BuildWorldScenario()
 
     robot = scn.robots[0]
-    box_id = 3  # Box 1-3 ID
+    box_id = scn.movable_bodies[0]
 
     ## TODO Calculate GraspDirection
 
@@ -199,7 +199,7 @@ def main():
     stream_info = {'sample-place': StreamInfo(seed_gen_fn=sdg_sample_place(scn), every_layer=15,
                                               free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),      # kann ignoriert werden. set box on random position on table for example. Keep in mind, z-position is wrong 
                    'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn.robots[0], scn.dic_body_info)),     # TODO: get grasp type by probabilistic graphical model
-                   'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn.robots[0], all_bodies=scn.all_bodies))#,  # TODO: need a stream to generate base pose
+                   'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn.robots[0], grasp_type=scn.grasp_type, all_bodies=scn.all_bodies))#,  # TODO: need a stream to generate base pose
                    #'plan-base-motion': StreamInfo(seed_gen_fn=sdg_motion_base_joint(scn)),
                    }
 
@@ -214,17 +214,17 @@ def main():
         #set Grasp direction
         grasp_dir = GraspDirection(box_id, scn.grasp_type)
 
-        f_ik_grasp = sdg_ik_grasp(robot, scn.all_bodies)
-
-        ### SETUP: Position and Orientation of Box, Table, robot, IDs are bodys                    
-        box_pose = BodyPose(box_id, get_pose(box_id)) 
-        box_grasp = stream_info['sample-grasp'].seed_gen_fn((box_id, ))
-
+        ### SETUP: Position and Orientation of Box, Table, robot, IDs are bodys
+        box_pose = stream_info['sample-place'].seed_gen_fn((box_id,))       # BodyPose(box_id)
+        print("box_pose: ", box_pose[0].value)
+        box_grasp = stream_info['sample-grasp'].seed_gen_fn((box_id, grasp_dir))[0]     #TODO
         ik = stream_info['inverse-kinematics'].seed_gen_fn((box_id, box_pose, box_grasp))
 
+
+        if ik is not None:
+            print("ik:", ik)
         step_simulation()
-        #time.sleep(0.5)
-        if(i % 1200 == 0):
+        if(i % 5 == 0):
             initial_conf = get_initial_conf('top')
             position = [0, -0.8, 0]
             startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
@@ -247,141 +247,6 @@ def main():
             load_start_position()
         i = i + 1
 
-
-
-
-    """connect(use_gui=True)
-    
-    scn = BuildWorldScenario()
-    scn.get_elemetns()"""
-
-    
-        
-        
-
-    """with open('PR2/TASK_cook/C_operatorPlans/C_op_sas.1.pk', 'rb') as f:
-         op_plan = pk.load(f)
-    print(op_plan)
-    print("stream_info: ", stream_info['sample-place'])
-
-    robot = scn.robots[0]
-
-
-    ### SETUP: Position and Orientation of Box, Table, robot, IDs are bodys
-    box_id = 3  # Box 1-3 IDs= [3, 4, 5]                        #TODO can be randomize
-    box_pose = BodyPose(box_id, get_pose(box_id))
-    #print(box_pose.value)
-
-    table_id = 1  # table 
-    table_pose = BodyPose(table_id, get_pose(table_id))
-
-    tiago_pose = BodyPose(robot, get_pose(robot))
-    joints = get_joints_from_body(robot, "arm")
-    conf = Conf(robot, joints, get_joint_positions(robot, joints))
-
-    
-    oBody = EXE_Object(pddl='o' + str(box_id), value=box_pose)
-    oRegion = EXE_Object(pddl='o' + str(table_id), value=table_pose)
-    oBodyPose = EXE_Object(pddl='pInit' + str(robot), value=joints)  # p72
-    oConf = EXE_Object(pddl='qInit', value=conf)  # q800
-    
-                  
-    
-    # open variables
-    voG0 = EXE_OptimisticObject(pddl='#g0', repr_name='#g0', value=None)
-    voQ0 = EXE_OptimisticObject(pddl='#q0', repr_name='#q0', value=None)
-    voT1 = EXE_OptimisticObject(pddl='#t1', repr_name='#t1', value=None)
-    voQ11 = EXE_OptimisticObject(pddl='#q11', repr_name='#q11', value=None)
-    voT85 = EXE_OptimisticObject(pddl='#t85', repr_name='#t85', value=None)
-    voT480 = EXE_OptimisticObject(pddl='#t480', repr_name='#t480', value=None)
-    voT37 = EXE_OptimisticObject(pddl='#t37', repr_name='#t37', value=None)
-    voT12 = EXE_OptimisticObject(pddl='#t12', repr_name='#t12', value=None)
-    voP2 = EXE_OptimisticObject(pddl='#p2', repr_name='#p2', value=None)"""
-
-
-
-    #TODO: Here op_plan should be hardcoded for the Tiago task, as shown in page13 of IP_DeepHeuristic.pdf"""
-    """ op_plan = [EXE_Stream(inputs=(oBody,),
-                          name='sample-grasp',
-                          outputs=(voG0,)),
-               EXE_Stream(inputs=(oArm, oBody, oBodyPose, voG0,),
-                          name='inverse-kinematics',
-                          outputs=(voQ0, voT1,)),
-               EXE_Stream(inputs=(oConf, voQ0,),
-                          name='plan-base-motion',
-                          outputs=(voT37,)),
-               EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ0,)),),
-                          name='move_base',
-                          parameters=(oConf, voQ0, voT37,)),
-               EXE_Action(add_effects=(pAtom(name='atgrasp', args=(oArm, oBody, voG0,)),),
-                          name='pick',
-                          parameters=(oArm, oBody, oBodyPose, voG0, voQ0, voT1,)),
-               EXE_Stream(inputs=(oBody, oRegion,),
-                          name='sample-place',
-                          outputs=(voP2,)),
-               EXE_Stream(inputs=(oArm, oBody, voP2, voG0,),
-                          name='inverse-kinematics',
-                          outputs=(voQ11, voT12,)),
-               EXE_Stream(inputs=(voQ0, voQ11,),
-                          name='plan-base-motion',
-                          outputs=(voT85,)),
-               EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ11,)),),
-                          name='move_base',
-                          parameters=(voQ0, voQ11, voT85,)),
-               EXE_Action(add_effects=(pAtom(name='atpose', args=(oBody, voP2,)),),
-                          name='place',
-                          parameters=(oArm, oBody, voP2, voG0, voQ11, voT12,)),
-               EXE_Stream(inputs=(voQ11, oConf,),
-                          name='plan-base-motion',
-                          outputs=(voT480,)),
-               EXE_Action(add_effects=(pAtom(name='atbconf', args=(oConf,)),),
-                          name='move_base',
-                          parameters=(voQ11, oConf, voT480,)),
-               ]
-
-    e_root = ExtendedNode()
-    assert op_plan is not None """
-
-    """Here use tree search to bind open variables"""
-    """ skeleton_env = SkeletonEnv(e_root.num_children, op_plan,
-                               get_update_env_reward_fn(scn, action_info),
-                               stream_info, scn)
-    selected_branch = PlannerUCT(skeleton_env)
-    
-
-    concrete_plan = selected_branch.think(900, visualization)
-    
-    if concrete_plan is None:
-        print('TAMP is failed.', concrete_plan)
-        disconnect()
-        return
-    thinking_time = time.time() - st
-    print('TAMP is successful. think_time: '.format(thinking_time))
-    
-    exe_plan = None
-    if concrete_plan is not None:
-        exe_plan = []
-    for action in concrete_plan:
-        exe_plan.append((action.name, [arg.value for arg in action.parameters]))
-
-    with open('exe_plan.pk', 'wb') as f:
-        pk.dump((scn, exe_plan), f)
-
-    if exe_plan is None:
-        disconnect()
-        return
-    
-
-    #disconnect()
-    #connect(use_gui=True)
-    #BuildWorldScenario()
-
-    with LockRenderer():
-        commands = postprocess_plan(scn, exe_plan)
-
-    play_commands(commands)
-    """
-    #disconnect()
 
     print('Finished.')
 

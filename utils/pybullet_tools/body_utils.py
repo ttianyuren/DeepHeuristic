@@ -13,30 +13,24 @@ from PIL import Image
 TOOL_FRAMES = {
     'iiwa14': 'iiwa_link_ee_kuka',  # iiwa_link_ee
     'kuka_lwr': 'link_ee',  # iiwa_link_ee
+    'tiago': 'gripper_grasping_frame'#gripper_grasping_frame'
 }
 
 BASE_FRAMES = {
     'iiwa14': 'iiwa_link_0',  # iiwa_link_ee
+    'tiago': 'base_link'
 }
-
-TIAGO_BASE_FRAMES = {
-    'tiago': 'base_footprint_joint'
-}
-
 
 JIANXIN_FRAMES = {
     'iiwa14': 'link_jianxin',  # iiwa_link_ee
-}
-
-TIAGO_JIANXIN_FRAMES = {
-    'tiago': ''
+    'tiago': 'arm_1_link'
 }
 
 
 def get_robot_jianXin_frame(robot):
     """return the shoulder frame (肩心) translated from the robot base frame"""
-    base_link = link_from_name(robot, TIAGO_BASE_FRAMES[get_body_name(robot)])
-    jianxin_link = link_from_name(robot, TIAGO_JIANXIN_FRAMES[get_body_name(robot)])
+    base_link = link_from_name(robot, BASE_FRAMES[get_body_name(robot)])
+    jianxin_link = link_from_name(robot, JIANXIN_FRAMES[get_body_name(robot)])
 
     shoulder_pose = get_link_pose(robot, jianxin_link)
     shoulder_tform = tform_from_pose(shoulder_pose)

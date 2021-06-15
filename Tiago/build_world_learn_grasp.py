@@ -14,7 +14,7 @@ from utils.pybullet_tools.utils import LockRenderer, enable_gravity, step_simula
     Pose, Point, set_default_camera, stable_z, SINK_URDF, STOVE_URDF, load_model, \
     disconnect, TABLE_URDF, get_bodies, HideOutput, create_box, load_pybullet, Euler, get_movable_joints, \
     set_joint_positions, set_point, load_pybullet, step_simulation, Euler, get_links, get_link_info, get_movable_joints, set_joint_positions, \
-    set_camera, get_center_extent, tform_from_pose, attach_viewcone, LockRenderer, load_model, set_point, get_pose
+    set_camera, get_center_extent, tform_from_pose, attach_viewcone, LockRenderer, load_model, set_point, get_pose, get_link_name
 
 from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf
 
@@ -30,23 +30,23 @@ class BuildWorldScenario(object):
                 self.grasp_type = 'top'
 
                 """ Load Table in the simulation"""
-                self.table = load_pybullet('/utils/models/table_collision/table.urdf', fixed_base=True)
-                
+                self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
+
                 """ Load floor to simulation """
-                self.floor = load_pybullet('/utils/models/short_floor.urdf', fixed_base=True)
+                self.floor = load_model('../Tiago/scenario_description/plane.urdf', fixed_base=True)
 
 
                 """ TIAGO ROBOT INIZIALIZATION """
                 startPosition = [0, -0.8, 0]
                 startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
                 
-                self.tiago = load_pybullet("/Tiago/tiago_description/tiago.urdf", 
+                self.tiago = load_pybullet("../Tiago/tiago_description/tiago.urdf",
                                             position=startPosition, 
                                             fixed_base=True)
 
                 self.setStartPositionAndOrienation(self.tiago, startPosition, startOrientation)
 
-                initial_conf = get_initial_conf('top')
+                initial_conf = get_initial_conf(self.grasp_type)
 
                 #Configure Arm Position and Torso Position in the beginning of the simulation
                 set_group_conf(self.tiago, 'arm', initial_conf)
@@ -58,20 +58,19 @@ class BuildWorldScenario(object):
                 """ Load Boxes to Simulations """
                 mass = 1        #in kg
                 self.bd_body = {
-                    "box1": create_box(.07, .07, .1, mass=mass, color=(1, 0, 0, 1)),
+                    "box1": create_box(.07, .07, .1, mass=mass, color=(0, 1, 0, 1)),
                 }
 
                 self.bd_body.update(dict((self.bd_body[k], k) for k in self.bd_body))
                 self.setBoxPositionAndOrientation()
 
                 enable_gravity()
-        
+
         self.movable_bodies = [self.bd_body['box1']]
         self.env_bodies = [self.floor]
         self.regions = [self.table]
 
         self.all_bodies = list(set(self.movable_bodies) | set(self.env_bodies) | set(self.regions))     #all ids in model/body [0, 1, 2, ...]
-
 
         self.sensors = []
         self.robots = [self.tiago]
@@ -82,6 +81,7 @@ class BuildWorldScenario(object):
 
         for b in self.movable_bodies:
             obj_center, obj_extent = get_center_extent(b)
+            #obj_extent = np.asarray([.07, .07, .1]) #TODO
             body_pose = get_pose(b)
             body_frame = tform_from_pose(body_pose)
             bottom_center = copy(obj_center)
@@ -92,12 +92,14 @@ class BuildWorldScenario(object):
             relative_frame_center = np.dot(center_frame, np.linalg.inv(body_frame))
 
             self.dic_body_info[b] = (obj_extent, relative_frame_bottom, relative_frame_center)
-        
+
+        set_camera(160, -35, 2.1, Point())
         self.saved_world = WorldSaver()
 
 
     def setBoxPositionAndOrientation(self):
-        box1_pos = [-0.3, -0.3, self.pos_table[2] + 0.1 / 2]#self.load_random_box_position()
+        box1_pos = [-0.1, -0.1, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
+        print("box_pose: ", box1_pos)
         self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
 
 
@@ -130,21 +132,18 @@ class BuildWorldScenario(object):
         #print("Position: {}, {}".format(x, y))
         return [x, y, 0]
 
-
     def load_start_orientation(self):
-        w = np.random.uniform(0, 2 * np.pi)
-        startOrientationRPY = [0, 0, w]
+        w = np.random.uniform(0, 2 * np.pi / 4)
+        startOrientationRPY = [0, 0, 0]
 
         #print("Orientation: {}".format(p.getQuaternionFromEuler(startOrientationRPY)))
         return p.getQuaternionFromEuler(startOrientationRPY)
-
 
     def setStartPositionAndOrienation(self, id, position, orientation):
         """
             ATTENTIONS: CALL THIS FUNCTION ONLY WHEN THE SIMULATION STARTS!!!!!!!!!
         """
         p.resetBasePositionAndOrientation(id, position, orientation)
-
 
     def reset(self):
         with HideOutput():
@@ -160,10 +159,9 @@ class BuildWorldScenario(object):
 
             set_default_camera()
 
-    def get_elemetns(self):
+    def get_elements(self):
         self.reset()
         return
-
 
     def save_world(self):
         pass
@@ -176,7 +174,7 @@ def display_scenario():
     connect(use_gui=True)
     
     scn = BuildWorldScenario()
-    scn.get_elemetns()
+    scn.get_elements()
 
     for i in range(10000):
         step_simulation()
@@ -184,4 +182,3 @@ def display_scenario():
 
     disconnect()
     print('Finished.')
-    

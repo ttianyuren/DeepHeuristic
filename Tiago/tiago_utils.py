@@ -10,20 +10,8 @@ from utils.motion.motion_planners import graph
 import numpy as np
 SIDE_HEIGHT_OFFSET = 0.03
 
-
-from utils.pybullet_tools.utils import multiply, get_link_pose, joint_from_name, set_joint_position, joints_from_names, \
-    set_joint_positions, get_joint_positions, get_min_limit, get_max_limit, quat_from_euler, read_pickle, set_pose, \
-    set_base_values, \
-    get_pose, euler_from_quat, link_from_name, has_link, point_from_pose, invert, Pose, \
-    unit_pose, joints_from_names, PoseSaver, get_aabb, get_joint_limits, get_joints, \
-    ConfSaver, get_bodies, create_mesh, remove_body, single_collision, unit_from_theta, angle_between, violates_limit, \
-    violates_limits, add_line, get_body_name, get_num_joints, approximate_as_cylinder, \
-    approximate_as_prism, unit_quat, unit_point, clip, get_joint_info, tform_point, get_yaw, \
-    get_pitch, wait_for_user, quat_angle_between, angle_between, quat_from_pose, compute_jacobian, \
-    movable_from_joints, quat_from_axis_angle, LockRenderer, Euler, get_links, get_link_name, \
-    draw_point, draw_pose, get_extend_fn, get_moving_links, link_pairs_collision, draw_point, get_link_subtree, \
-    clone_body, get_all_links, set_color, pairwise_collision, tform_point, wait_for_duration, add_body_name, RED, GREEN, \
-    YELLOW, apply_alpha
+from utils.pybullet_tools.utils import multiply, set_joint_position, set_joint_positions, get_joint_positions, get_min_limit, get_max_limit, \
+                                       read_pickle, euler_from_quat, link_from_name, point_from_pose, Pose, unit_pose, joints_from_names, approximate_as_prism, Euler
 
 
 #Webot https://cyberbotics.com/doc/guide/tiago-steel
@@ -58,26 +46,29 @@ def get_database_file(filename):
 ########### NOT NEEDED ##############################
 
 Tiago_limits = {
-    'arm_joint_1': [0.07, 2.68],
-    'arm_joint_2': [-1.5, 1.02],
-    'arm_joint_3': [-3.46, 1.5],
-    'arm_joint_4': [-0.32, 2.27],
-    'arm_joint_5': [-2.07, 2.07],
-    'arm_joint_6': [-1.39, 1.39],
-    'arm_joint_7': [-2.07, 2.07], 
+    'arm_1_joint': [0.07, 2.68],
+    'arm_2_joint': [-1.5, 1.02],
+    'arm_3_joint': [-3.46, 1.5],
+    'arm_4_joint': [-0.32, 2.27],
+    'arm_5_joint': [-2.07, 2.07],
+    'arm_6_joint': [-1.39, 1.39],
+    'arm_7_joint': [-2.07, 2.07],
     'gripper_left_finger_joint': [0, 0.05],
-    'gripper_right_finger_joint': [0, 0.05]
+    'gripper_right_finger_joint': [0, 0.05],
+    'head_1_joint': [0, 0],
+    'head_2_joint': [0, 0],
+    'torso_lift_joint': [0, 0],
 }
 
 
 Tiago_arm_limits = {
-    'arm_joint_1': [0.07, 2.68],
-    'arm_joint_2': [-1.5, 1.02],
-    'arm_joint_3': [-3.46, 1.5],
-    'arm_joint_4': [-0.32, 2.27],
-    'arm_joint_5': [-2.07, 2.07],
-    'arm_joint_6': [-1.39, 1.39],
-    'arm_joint_7': [-2.07, 2.07], 
+    'arm_1_joint': [0.07, 2.68],
+    'arm_2_joint': [-1.5, 1.02],
+    'arm_3_joint': [-3.46, 1.5],
+    'arm_4_joint': [-0.32, 2.27],
+    'arm_5_joint': [-2.07, 2.07],
+    'arm_6_joint': [-1.39, 1.39],
+    'arm_7_joint': [-2.07, 2.07],
 }
 
 Tiago_head_limits = {
@@ -125,14 +116,40 @@ INITIAL_GRASP_POSITIONS = {
     'back': BACK_GRAP
 }
 
+
+TIAGO_COSTUM_LIMITS_TOP = {
+    'arm_2_joint': [0, 1.0908307825],
+    'arm_4_joint': [0.5, 2.35619449019],
+    'arm_6_joint': [1.0, 1.41371669412],
+    'torso_lift_joint': [0.3, 0.35]
+}
+
+TIAGO_CUSTOM_LIMITS_LEFT = {
+
+}
+
+TIAGO_CUSTOM_LIMITS_FRONT = {
+
+}
+
+TIAGO_CUSTOM_LIMITS_RIGHT = {
+
+}
+
+TIAGO_CUSTOM_GRAP_LIMITS = {
+    'top': TIAGO_COSTUM_LIMITS_TOP,
+    'left': TIAGO_CUSTOM_LIMITS_LEFT,
+    'right': TIAGO_CUSTOM_LIMITS_RIGHT,
+    'front': TIAGO_CUSTOM_LIMITS_FRONT
+}
+
+
+
+
 CARRY_ARM_CONF = {
     'top:': TOP_GRAP, 
     'left_side': LEFT_GRAP,
     'right_side': RIGHT_GRAP 
-}
-
-TIAGO_TOOL_FRAMES = {
-    'tiago': 'arm_tool_link'
 }
 
 """

@@ -1,0 +1,24 @@
+suspension_right_joint== 11
+wheel_right_joint==12
+suspension_left_joint==13
+wheel_left_joint==14
+caster_front_right_1_joint==15
+caster_front_right_2_joint==16
+caster_front_left_1_joint==17
+caster_front_left_2_joint==18
+caster_back_right_1_joint==19
+caster_back_right_2_joint==20
+caster_back_left_1_joint==21
+caster_back_left_2_joint==22
+torso_lift_joint==24
+head_1_joint==25
+head_2_joint==26
+arm_1_joint==34
+arm_2_joint==35
+arm_3_joint==36
+arm_4_joint==37
+arm_5_joint==38
+arm_6_joint==39
+arm_7_joint==40
+gripper_right_finger_joint==46
+gripper_left_finger_joint==47

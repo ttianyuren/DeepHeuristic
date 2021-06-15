@@ -20,7 +20,7 @@ from .transformations import quaternion_from_matrix, unit_vector
 
 directory = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(directory, '../motion'))
-from motion_planners.rrt_connect import birrt, direct_path
+#from motion_planners.rrt_connect import birrt, direct_path
 
 # from ..motion.motion_planners.rrt_connect import birrt, direct_path
 
@@ -71,13 +71,9 @@ def is_remote():
 
 
 def is_darwin():  # TODO: change loading accordingly
-    if platform.system() == 'Windows':
-        return platform.system() == 'Windows' 
-    elif platform.system() == 'MacOS':
-        return platform.system() == 'MacOS'
-
-    #return platform.system() == 'Darwin'  # platform.release()
-    return sys.platform == 'darwin'
+    return True
+    # return platform.system() == 'Darwin'  # platform.release()
+    # return sys.platform == 'darwin'
 
 
 def read(filename):
@@ -93,7 +89,13 @@ def write(filename, string):
 def read_pickle(filename):
     # Can sometimes read pickle3 from python2 by calling twice
     # Can possibly read pickle2 from python3 by using encoding='latin1'
-    with open(filename, 'rb') as f:
+    destination = filename + "_"
+    with open(filename, 'rb') as infile:
+        content = infile.read()
+    with open(destination, 'wb') as output:
+        for line in content.splitlines():
+            output.write(line + str.encode('\n'))
+    with open(destination, 'rb',) as f:
         return pickle.load(f)
 
 
@@ -342,11 +344,8 @@ def load_pybullet(filename, fixed_base=False, position=[0, 0, 0], startOrientati
     # fixed_base=False implies infinite base mass
     with LockRenderer():
         if filename.endswith('.urdf'):
-            startOrientationRPY = [0,0,0]
-            startOrientation = p.getQuaternionFromEuler(startOrientationRPY)
-            print(filename)
-            flags = get_urdf_flags(**kwargs)
-            body = p.loadURDF(filename, useFixedBase=fixed_base, basePosition=position, baseOrientation=startOrientation, flags=flags,
+            flags = get_urdf_flags()
+            body = p.loadURDF(filename, useFixedBase=fixed_base, flags=flags,
                               globalScaling=scale, physicsClientId=CLIENT)
         elif filename.endswith('.sdf'):
             body = p.loadSDF(filename, physicsClientId=CLIENT)
@@ -384,28 +383,9 @@ URDF_FLAGS = [p.URDF_USE_INERTIA_FROM_FILE,
               p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS]
 
 
-
-def get_operating_system():
-    return platform.system()
-        
-
-def up_directory(file):
-    return os.path.dirname(file)
-
-
-def get_model_path(path):  # TODO: add to search path
-    operating_system = get_operating_system()
-
-    if operating_system == "Windows":
-        dir = up_directory(up_directory(up_directory(os.path.abspath(__file__))))
-        path = os.path.abspath(path).replace("C:", '')                              #Path has to change in Windows-file-system-format
-
-        return dir + path
-    else:
-        pass    #TODO check for other operating systems like MacOS or UNIX
-        dir = up_directory(os.path.abspath(__file__))
-        return os.path.join(dir, '..', path) 
-
+def get_model_path(rel_path):  # TODO: add to search path
+    directory = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(directory, '..', rel_path)
 
 
 def load_model(rel_path, pose=None, **kwargs):
@@ -566,7 +546,6 @@ def connect(use_gui=True, shadows=True):
     # Shared Memory: execute the physics simulation and rendering in a separate process
     # https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/examples/vrminitaur.py#L7
     # make sure to compile pybullet with PYBULLET_USE_NUMPY enabled
-
     if use_gui and not is_darwin() and ('DISPLAY' not in os.environ):
         use_gui = False
         print('No display detected!')
@@ -1236,7 +1215,6 @@ BodyInfo = namedtuple('BodyInfo', ['base_name', 'body_name'])
 
 
 def get_body_info(body):
-    a = BodyInfo(*p.getBodyInfo(body, physicsClientId=CLIENT))
     return BodyInfo(*p.getBodyInfo(body, physicsClientId=CLIENT))
 
 
@@ -1432,7 +1410,6 @@ def joint_from_name(body, name):
     dict_name_joint = {}
     for joint in joints:
         dict_name_joint[get_joint_name(body, joint)] = joint
-
     for joint in joints:
         # _name = get_joint_name(body, joint)
         # if name in _name:
@@ -1619,9 +1596,10 @@ def wrap_positions(body, joints, positions):
 
 def get_custom_limits(body, joints, custom_limits={}, circular_limits=UNBOUNDED_LIMITS):
     joint_limits = []
+    a = [get_joint_name(body, jointt) for jointt in joints]
     for joint in joints:
-        if joint in custom_limits:
-            joint_limits.append(custom_limits[joint])
+        if get_joint_name(body, joint) in custom_limits:
+            joint_limits.append(custom_limits[get_joint_name(body, joint)])
         elif is_circular(body, joint):
             joint_limits.append(circular_limits)
         else:
@@ -1668,13 +1646,9 @@ parent_link_from_joint = get_link_parent
 
 
 def link_from_name(body, name):
-    #print("base_name: ", get_base_name(body))
-    #print("get_joint: ", get_joints(body))
-    #print("name: ", name)
     if name == get_base_name(body):
         return BASE_LINK
     for link in get_joints(body):
-        #print("link_name: ", get_link_name(body, link))
         if get_link_name(body, link) == name:
             return link
     raise ValueError(body, name)
@@ -2824,9 +2798,11 @@ def body_collision(body1, body2, max_distance=MAX_DISTANCE, visualization=False)
         for test in results:
             body = test[1]
             link = test[3]
-            add_text('{}-{}'.format(body, link), test[5], color=(1, 0.3, 0.3), lifetime=2)
-            draw_point(test[5], size=0.05, color=(1, 0.5, 0.5), width=2, lifetime=10)
-            draw_point(test[6], size=0.05, color=(0.5, 1, 0.5), width=2, lifetime=10)
+            add_text('{}-{}'.format(body, link), test[5], color=(1, 0.3, 0.3), lifetime=20)
+            print('{} -x- {}'.format(body, link), test[2], test[5])
+            print(get_link_name(body, link))
+            draw_point(test[5], size=0.05, color=(1, 0.5, 0.5), width=2, lifetime=20)
+            draw_point(test[6], size=0.05, color=(0.5, 1, 0.5), width=2, lifetime=20)
             dist = test[8]
 
     return len(results) != 0  # getContactPoints`
@@ -3803,8 +3779,8 @@ def inverse_kinematics_helper(robot, link, target_pose, null_space=None):
         lower, upper, ranges, rest = null_space
 
         kinematic_conf = p.calculateInverseKinematics(robot, link, target_point,
-                                                      lowerLimits=lower, upperLimits=upper, jointRanges=ranges,
-                                                      restPoses=rest,
+                                                      lowerLimits=lower, upperLimits=upper, #jointRanges=ranges,
+                                                      #restPoses=rest,
                                                       physicsClientId=CLIENT)
     elif target_quat is None:
         # ikSolver = p.IK_DLS or p.IK_SDLS
@@ -3830,15 +3806,83 @@ def is_pose_close(pose, target_pose, pos_tolerance=1e-3, ori_tolerance=1e-3 * np
     return True
 
 
+
+def get_limits_of_joint_info(body, joint):
+    return [p.getJointInfo(body, joint, physicsClientId=CLIENT)[8],
+            p.getJointInfo(body, joint, physicsClientId=CLIENT)[9]]
+
+
+def check_joint_limit(body, kinematic_conf, movable_joints):
+    kinematic_conf = list(kinematic_conf)
+    for i, (conf, joint) in enumerate(zip(kinematic_conf, movable_joints)):
+        limits = get_limits_of_joint_info(body, joint)
+
+        if (conf > limits[0] and conf < limits[1]):
+            pass #value is in limit, do nothing
+        else:
+            if (conf > limits[1]):
+                kinematic_conf[i] = limits[1]
+            else:
+                kinematic_conf[i] = limits[0]
+
+    return tuple(kinematic_conf)
+
+
+    #return tuple(kinematic_conf)
+
+Tiago_GROUPS = {
+    'base': ['base_footprint_joint'],
+    'torso': ['torso_lift_joint'],                                              #ID: 24
+    'head': ['head_1_joint', 'head_2_joint'],
+    'arm': ['arm_1_joint', 'arm_2_joint', 'arm_3_joint', 'arm_4_joint',         #ID: 34, 35, 36
+            'arm_5_joint', 'arm_6_joint', 'arm_7_joint'],                       #ID: 37, 38, 39
+    'gripper': ['gripper_left_finger_joint', 'gripper_right_finger_joint'],
+    'wheel': ['wheel_left_joint', 'wheel_right_joint']
+}
+
+
+def get_joints_from_body(robot, body_part):
+    return joints_from_names(robot, Tiago_GROUPS[body_part])
+
+
+def check_collision(kinematic_conf):
+    return False     #TODO
+
+
+def setup_nullspace_with_joint_limits(body, movable_joints, joint_limits):
+    lower, upper, ranges, rest = [], [], [], []
+    joints = joints_from_names(body, joint_limits)
+    for joint in movable_joints:
+        if joint in joints:
+            idx = joints.index(joint)
+            limits = joint_limits[get_joint_name(body, joints[idx])]
+            lower.append(limits[0])
+            upper.append(limits[1])
+        else:
+            limits = get_limits_of_joint_info(body, joint)
+            lower.append(limits[0])
+            upper.append(limits[1])
+
+    return (lower, upper, ranges, rest)
+
+
+
 def inverse_kinematics(robot, link, target_pose, max_iterations=200, custom_limits={}, **kwargs):
     movable_joints = get_movable_joints(robot)
+    nullspace = setup_nullspace_with_joint_limits(robot, movable_joints, custom_limits)
 
     for iterations in range(max_iterations):
         # TODO: stop is no progress
         # TODO: stop if collision or invalid joint limits
-        kinematic_conf = inverse_kinematics_helper(robot, link, target_pose)
+
+        kinematic_conf = inverse_kinematics_helper(robot, link, target_pose, null_space=nullspace)
         if kinematic_conf is None:
             return None, 0.5
+
+        kinematic_conf = check_joint_limit(robot, kinematic_conf, movable_joints)
+        if check_collision(kinematic_conf):
+            return None
+
         set_joint_positions(robot, movable_joints, kinematic_conf)
         if is_pose_close(get_link_pose(robot, link), target_pose, **kwargs):
             break
