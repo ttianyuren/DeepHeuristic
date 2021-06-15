@@ -82,7 +82,7 @@ class sdg_sample_grasp(object):
         """return the ee_frame wrt the measure_frame of the object"""
         body, grasp_dir = input_tuple  # grasp_dir defined in ellipsoid_frame of the body
 
-        for i in range(0):
+        for i in range(52):
             print(get_link_name(self.robot, i))
 
         assert body == grasp_dir.body
@@ -95,13 +95,13 @@ class sdg_sample_grasp(object):
         translate_z = Pose(point=[0, 0, -0.001])
         list_grasp = []
         if grasp_dir == 'top':
-            """ee at +X of the ellipsoid_frame"""
-            swap_z = Pose(euler=[0, -np.pi / 2, 0])
+            """ee at +Z of the ellipsoid_frame"""
+            swap_z = Pose(euler=[0, 0, np.pi])          #box koordinatensystem
             # translate_point: choose from the grasping surface with 2 dof
-            d1, d2 = 0., 0.  # [-0.5, 0.5]
-            translate_point = Pose(point=[ex / 2, 0 + d1 * ey, ez / 2 + d2 * ez])
-            for j in range(2):
-                rotate_z = Pose(euler=[0, 0, j * np.pi])  # gripper open with +Y direction
+            d1, d2 = 0.0, 0.0  # [-0.5, 0.5]                                    #d1 beeinflusst y-achse, und d2 beeinflusst z-achse
+            translate_point = Pose(point=[0 - d2 * ex, 0 + d1 * ey, ez])
+            for j in range(4):
+                rotate_z = Pose(euler=[ 0,  0,  0])      #rotate_z = Pose(euler=[0, 0, 0])                #gripper frame
                 grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
                 list_grasp.append(grasp)
 
@@ -120,7 +120,7 @@ class sdg_sample_grasp(object):
         """ee_frame wrt measure_frame: get_pose()"""
         grasp_pose = multiply(invert(get_pose(body)), pose_from_tform(ellipsoid_frame), grasp_pose)
 
-        approach_pose = Pose(0.1 * Point(z=-1))  # pose bias wrt end-effector frame
+        approach_pose = Pose(-0.1 * Point(z=-1))  # pose bias wrt end-effector frame
         body_grasp = BodyGrasp(body, grasp_pose, approach_pose, self.robot, self.end_effector_link)
         return (body_grasp,)  # return a tuple
 

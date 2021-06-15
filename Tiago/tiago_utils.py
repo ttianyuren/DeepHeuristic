@@ -120,8 +120,11 @@ INITIAL_GRASP_POSITIONS = {
 TIAGO_COSTUM_LIMITS_TOP = {
     'arm_2_joint': [0, 1.0908307825],
     'arm_4_joint': [0.5, 2.35619449019],
-    'arm_6_joint': [1.0, 1.41371669412],
-    'torso_lift_joint': [0.3, 0.35]
+    #'arm_6_joint': [1.0, 1.41371669412],
+    #'arm_7_joint': [1.0, 1.0],
+    'torso_lift_joint': [0.3, 0.35],
+    'gripper_right_finger_joint': [0.05, 0.05],
+    'gripper_left_finger_joint': [0.05, 0.05]
 }
 
 TIAGO_CUSTOM_LIMITS_LEFT = {

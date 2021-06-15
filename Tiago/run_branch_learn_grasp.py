@@ -221,6 +221,10 @@ def main():
         ik = stream_info['inverse-kinematics'].seed_gen_fn((box_id, box_pose, box_grasp))
 
 
+        #todo reset simulation
+        #todo führe ik mit open gripper aus
+
+
         if ik is not None:
             print("ik:", ik)
         step_simulation()

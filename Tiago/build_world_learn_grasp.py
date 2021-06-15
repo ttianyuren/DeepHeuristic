@@ -98,7 +98,7 @@ class BuildWorldScenario(object):
 
 
     def setBoxPositionAndOrientation(self):
-        box1_pos = [-0.1, -0.1, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
+        box1_pos = [0, -.3, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
         print("box_pose: ", box1_pos)
         self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
 
@@ -134,7 +134,7 @@ class BuildWorldScenario(object):
 
     def load_start_orientation(self):
         w = np.random.uniform(0, 2 * np.pi / 4)
-        startOrientationRPY = [0, 0, 0]
+        startOrientationRPY = [0, 0, np.pi / 4]
 
         #print("Orientation: {}".format(p.getQuaternionFromEuler(startOrientationRPY)))
         return p.getQuaternionFromEuler(startOrientationRPY)

@@ -3875,6 +3875,7 @@ def inverse_kinematics(robot, link, target_pose, max_iterations=200, custom_limi
         # TODO: stop is no progress
         # TODO: stop if collision or invalid joint limits
 
+        #TODO KINEMATIC_CONF falsch --> problem p.inversekinematic in helper, arm_7_joint wird nicht richtig berechnet, finger schließen sich immer obwohl limits auf max gesetzt
         kinematic_conf = inverse_kinematics_helper(robot, link, target_pose, null_space=nullspace)
         if kinematic_conf is None:
             return None, 0.5
@@ -3882,8 +3883,14 @@ def inverse_kinematics(robot, link, target_pose, max_iterations=200, custom_limi
         kinematic_conf = check_joint_limit(robot, kinematic_conf, movable_joints)
         if check_collision(kinematic_conf):
             return None
+        kinematic_conf = list(kinematic_conf)
+        kinematic_conf[21] = 1.0
+        set_joint_positions(robot, movable_joints, tuple(kinematic_conf))
 
-        set_joint_positions(robot, movable_joints, kinematic_conf)
+        #for joint in get_joints_from_body(robot, "gripper"):
+        #    set_joint_position(robot, joint, get_max_limit(robot, joint))
+
+
         if is_pose_close(get_link_pose(robot, link), target_pose, **kwargs):
             break
     else:
