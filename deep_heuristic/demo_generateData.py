@@ -64,14 +64,14 @@ def get_rand(low=0.08, high=0.20):
 class PlanningScenario(object):
     def __init__(self):
         with HideOutput():
-            self.arm_left = load_pybullet("darias_description/urdf/darias_L_primitive_collision.urdf",
+            self.arm_left = load_pybullet("../deep_heuristic/darias_description/urdf/darias_L_primitive_collision.urdf",
                                           fixed_base=True)
             # self.arm_left = load_pybullet("../da_description/robots/left_no_hands.urdf",
             #                               fixed_base=True)
 
             # self.arm_left = load_pybullet("../lwr_description/kuka_lwr_left.urdf",
             #                               fixed_base=True)
-            self.arm_base = load_pybullet("darias_description/urdf/darias_base.urdf", fixed_base=True)
+            self.arm_base = load_pybullet("../deep_heuristic/darias_description/urdf/darias_base.urdf", fixed_base=True)
 
             """import fixed objects"""
             self.floor = load_pybullet("../scenario_description/floor.urdf", fixed_base=True)
@@ -167,9 +167,9 @@ class PlanningScenario(object):
 
             """set position for movable objects"""
 
-            obj1 = create_box(get_rand(), get_rand(), get_rand(), mass=0.5, color=(0.859, 0.192, 0.306, 1.0))
-            obj2 = create_box(get_rand(), get_rand(), get_rand(), mass=0.5, color=(0.271, 0.706, 0.490, 1.0))
-            obj3 = create_box(get_rand(), get_rand(), get_rand(), mass=0.5, color=(0.647, 0.498, 0.894, 1.0))
+            obj1 = create_box(get_rand(), get_rand(), get_rand(low=0.14), mass=0.5, color=(0.859, 0.192, 0.306, 1.0))
+            obj2 = create_box(get_rand(), get_rand(), get_rand(low=0.14), mass=0.5, color=(0.271, 0.706, 0.490, 1.0))
+            obj3 = create_box(get_rand(), get_rand(), get_rand(low=0.14), mass=0.5, color=(0.647, 0.498, 0.894, 1.0))
 
             self.movable_bodies = [obj1, obj2, obj3]
 
@@ -214,7 +214,7 @@ class PlanningScenario(object):
 
 
 def gather_training_data():
-    visualization = 0
+    visualization = 1
     connect(use_gui=visualization)
 
     scn = PlanningScenario()
