@@ -15,7 +15,7 @@ from utils.pybullet_tools.body_utils import *
 #from pr2_problems import get_fixed_bodies
 from Tiago.tiago_utils import Tiago_limits, get_group_conf, get_side_grasps, learned_pose_generator, \
                               get_top_grasps, get_joints_from_body, get_gripper_link, \
-                              LEFT_GRAP, RIGHT_GRAP, BACK_GRAP, FRONT_GRAP, TOP_GRAP, open_arm, joints_from_names
+                              LEFT_GRAP, RIGHT_GRAP, BACK_GRAP, FRONT_GRAP, TOP_GRAP, open_arm, joints_from_names, TIAGO_CUSTOM_GRAP_LIMITS
 from utils.pybullet_tools.utils import *
 
 
@@ -106,24 +106,12 @@ class sdg_sample_grasp(object):
         translate_z = Pose(point=[0, 0, -0.001])
         list_grasp = []
         if grasp_dir == 'top':
-            """ee at +X of the ellipsoid_frame"""
-            swap_z = Pose(euler=[0, -np.pi / 2, 0])
-            # translate_point: choose from the grasping surface with 2 dof
-            d0, d1, d2 = -.3, 0., .5  # [-0.5, 0.5]
-            translate_point = Pose(point=[ex / 2+ d0 * ez, 0 + d1 * ey, ez / 2 + d2 * ez])
-            for j in range(2):
-                rotate_z = Pose(euler=[0, 0, j * np.pi])  # gripper open with +Y direction
-                grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
-                list_grasp.append(grasp)
-
-
-        elif grasp_dir == 'toppp':
-            """ee at +Y"""
-            swap_z = Pose(euler=[np.pi / 2, 0, 0])
+            """ee at +Z of the ellipsoid_frame"""
+            swap_z = Pose(euler=[0, np.pi / 2, 0])
             d1, d2 = 0., -0.  # [-0.5, 0.5]
-            translate_point = Pose(point=[0 - d1 * ex, ey / 2, ez / 2 + d2 * ez])
-            for j in range(2):
-                rotate_z = Pose(euler=[0, 0, j * np.pi + np.pi / 2])
+            translate_point = Pose(point=[0 - d2 * ex, 0 + d1 * ey, ez])
+            for j in range(4):
+                rotate_z = Pose(euler=[j * np.pi / 2, 0,  0])
                 grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
                 list_grasp.append(grasp)
 
@@ -132,7 +120,7 @@ class sdg_sample_grasp(object):
         """ee_frame wrt measure_frame: get_pose()"""
         grasp_pose = multiply(invert(get_pose(body)), pose_from_tform(ellipsoid_frame), grasp_pose)
 
-        approach_pose = Pose(0.1 * Point(z=-1))  # pose bias wrt end-effector frame
+        approach_pose = Pose(0.1 * Point(x=-1))  # pose bias wrt end-effector frame
         body_grasp = BodyGrasp(body, grasp_pose, approach_pose, self.robot, self.end_effector_link)
         return (body_grasp,)  # return a tuple
 
@@ -173,7 +161,8 @@ class sdg_ik_grasp(object):
 
         grasp_pose_ee = multiply(pose.value, grasp.grasp_pose)  # in world frame
         approach_pose_ee = multiply(grasp_pose_ee, grasp.approach_pose)  # 右乘,以当前ee坐标系为基准进行变换
-
+        ori = p.getEulerFromQuaternion(grasp_pose_ee[1])
+        a_ori = p.getEulerFromQuaternion(approach_pose_ee[1])
         list_q_approach = []
         list_q_grasp = []
         list_test_collision = []

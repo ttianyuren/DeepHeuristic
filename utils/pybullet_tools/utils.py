@@ -6,6 +6,8 @@ import math
 import os
 import pickle
 import platform
+from tabnanny import check
+
 import pybullet as p
 import random
 import sys
@@ -1594,19 +1596,53 @@ def wrap_positions(body, joints, positions):
             for joint, position in zip(joints, positions)]
 
 
-def get_custom_limits(body, joints, custom_limits={}, circular_limits=UNBOUNDED_LIMITS):
+def get_custom_limits(body, joints, custom_limits={}, circular_limits=CIRCULAR_LIMITS):
     joint_limits = []
     a = [get_joint_name(body, jointt) for jointt in joints]
     for joint in joints:
-        if get_joint_name(body, joint) in custom_limits:
-            joint_limits.append(custom_limits[get_joint_name(body, joint)])
+        if joint in custom_limits:
+            joint_limits.append(custom_limits[joint])
         elif is_circular(body, joint):
             joint_limits.append(circular_limits)
         else:
             joint_limits.append(get_joint_limits(body, joint))
     return zip(*joint_limits)
 
+def get_limits_of_joint_info(body, joint):
+    return [p.getJointInfo(body, joint, physicsClientId=CLIENT)[8],
+            p.getJointInfo(body, joint, physicsClientId=CLIENT)[9]]
 
+def check_joint_limit(body, kinematic_conf, movable_joints):
+    kinematic_conf = list(kinematic_conf)
+    for i, (conf, joint) in enumerate(zip(kinematic_conf, movable_joints)):
+        limits = get_limits_of_joint_info(body, joint)
+        # kinematic_conf[i] = min(limits[1], max(kinematic_conf[i], limits[0]))
+        if (conf < limits[0] and conf > limits[1]):
+            if (conf > limits[1]):
+                kinematic_conf[i] = limits[1]
+            else:
+                kinematic_conf[i] = limits[0]
+
+    return tuple(kinematic_conf)
+
+def get_joints_from_body(robot, body_part):
+    return joints_from_names(robot, Tiago_GROUPS[body_part])
+
+def setup_nullspace_with_joint_limits(body, movable_joints, joint_limits):
+    lower, upper, ranges, rest = [], [], [], []
+    joints = joints_from_names(body, joint_limits)
+    for joint in movable_joints:
+        if joint in joints:
+            idx = joints.index(joint)
+            limits = joint_limits[get_joint_name(body, joints[idx])]
+            lower.append(limits[0])
+            upper.append(limits[1])
+        else:
+            limits = get_limits_of_joint_info(body, joint)
+            lower.append(limits[0])
+            upper.append(limits[1])
+
+    return (lower, upper, ranges, rest)
 #####################################
 
 # Links
@@ -2799,11 +2835,11 @@ def body_collision(body1, body2, max_distance=MAX_DISTANCE, visualization=False)
             body = test[1]
             link = test[3]
             add_text('{}-{}'.format(body, link), test[5], color=(1, 0.3, 0.3), lifetime=20)
-            print('{} -x- {}'.format(body, link), test[2], test[5])
-            print(get_link_name(body, link))
+            # print('{} -x- {}'.format(body, link), test[2], test[5])
+            # print(get_link_name(body, link))
             draw_point(test[5], size=0.05, color=(1, 0.5, 0.5), width=2, lifetime=20)
             draw_point(test[6], size=0.05, color=(0.5, 1, 0.5), width=2, lifetime=20)
-            dist = test[8]
+            # dist = test[8]
 
     return len(results) != 0  # getContactPoints`
 
@@ -3778,7 +3814,7 @@ def inverse_kinematics_helper(robot, link, target_pose, null_space=None):
         assert target_quat is not None
         lower, upper, ranges, rest = null_space
 
-        kinematic_conf = p.calculateInverseKinematics(robot, link, target_point,
+        kinematic_conf = p.calculateInverseKinematics(robot, link, target_point, target_quat,
                                                       lowerLimits=lower, upperLimits=upper, jointRanges=ranges,
                                                       restPoses=rest,
                                                       physicsClientId=CLIENT)
@@ -3808,13 +3844,14 @@ def is_pose_close(pose, target_pose, pos_tolerance=1e-3, ori_tolerance=1e-3 * np
 
 def inverse_kinematics(robot, link, target_pose, max_iterations=200, custom_limits={}, **kwargs):
     movable_joints = get_movable_joints(robot)
-
+    nullspace = setup_nullspace_with_joint_limits(robot, movable_joints, custom_limits)
     for iterations in range(max_iterations):
         # TODO: stop is no progress
         # TODO: stop if collision or invalid joint limits
-        kinematic_conf = inverse_kinematics_helper(robot, link, target_pose)
+        kinematic_conf = inverse_kinematics_helper(robot, link, target_pose, null_space=nullspace)
         if kinematic_conf is None:
             return None, 0.5
+        kinematic_conf = check_joint_limit(robot, kinematic_conf, movable_joints)
         set_joint_positions(robot, movable_joints, kinematic_conf)
         if is_pose_close(get_link_pose(robot, link), target_pose, **kwargs):
             break
