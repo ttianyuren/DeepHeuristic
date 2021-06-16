@@ -58,7 +58,7 @@ class BuildWorldScenario(object):
                 """ Load Boxes to Simulations """
                 mass = 1        #in kg
                 self.bd_body = {
-                    "box1": create_box(.07, .07, .2, mass=mass, color=(0, 1, 0, 1)),
+                    "box1": create_box(.07, .07, .1, mass=mass, color=(0, 1, 0, 1)),
                 }
 
                 self.bd_body.update(dict((self.bd_body[k], k) for k in self.bd_body))
