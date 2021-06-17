@@ -115,12 +115,47 @@ class sdg_sample_grasp(object):
                 grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
                 list_grasp.append(grasp)
 
+            approach_pose = Pose(0.1 * Point(x=-1))  # pose bias wrt end-effector frame
+
+        elif grasp_dir == 'left':
+            """ee at -Y"""
+            swap_z = Pose(euler=[0, 0, np.pi / 2])
+            d1, d2 = 0., 0.  # [-0.5, 0.5]
+            translate_point = Pose(point=[0 + d1 * ex, -ey / 2, ez / 2 + d2 * ez])
+            for j in range(2):
+                rotate_z = Pose(euler=[j * np.pi, 0, 0])
+                grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
+                list_grasp.append(grasp)
+
+            approach_pose = Pose(0.1 * Point(z=1))  # pose bias wrt end-effector frame
+
+
+        elif grasp_dir == 'right':
+            """ee at +Y"""
+            swap_z = Pose(euler=[0, 0, - np.pi / 2])
+            d1, d2 = 0., 0.  # [-0.5, 0.5]
+            translate_point = Pose(point=[0 - d1 * ex, ey / 2, ez / 2 + d2 * ez])
+            for j in range(2):
+                rotate_z = Pose(euler=[j * -np.pi / 2, 0, 0])
+                grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
+                list_grasp.append(grasp)
+
+            approach_pose = Pose(0.1 * Point(z=-1))  # pose bias wrt end-effector frame
+
+
+        elif grasp_dir == 'front':
+            pass
+
+        elif grasp_dir == 'behind':
+            pass
+
         """ee_frame wrt ellipsoid_frame"""
-        grasp_pose = random.sample(list_grasp, 1)[0]
+        #grasp_pose = random.sample(list_grasp, 1)[0]
+        grasp_pose = list_grasp[0]
         """ee_frame wrt measure_frame: get_pose()"""
         grasp_pose = multiply(invert(get_pose(body)), pose_from_tform(ellipsoid_frame), grasp_pose)
 
-        approach_pose = Pose(0.1 * Point(x=-1))  # pose bias wrt end-effector frame
+        #approach_pose = Pose(0.1 * Point(x=-1))  # pose bias wrt end-effector frame
         body_grasp = BodyGrasp(body, grasp_pose, approach_pose, self.robot, self.end_effector_link)
         return (body_grasp,)  # return a tuple
 

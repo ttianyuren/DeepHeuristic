@@ -27,7 +27,7 @@ class BuildWorldScenario(object):
                 #table = (länge = 1.5, breite = 1)
                 self.pos_table = [0, 0, 0.58]
                 self.table_config = [1.5, 1, 0.58]
-                self.grasp_type = 'top'
+                self.grasp_type = 'left'
 
                 """ Load Table in the simulation"""
                 self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
@@ -52,7 +52,7 @@ class BuildWorldScenario(object):
                 set_group_conf(self.tiago, 'arm', initial_conf)
                 close_arm(self.tiago)                              
                 open_arm(self.tiago)                                
-                set_group_conf(self.tiago, 'torso', [0.35])          
+                set_group_conf(self.tiago, 'torso', [0.20])
 
 
                 """ Load Boxes to Simulations """
@@ -97,7 +97,7 @@ class BuildWorldScenario(object):
 
 
     def setBoxPositionAndOrientation(self):
-        box1_pos = [-0.1, -0.1, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
+        box1_pos = [0.2, -0.2, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
         self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
 
 

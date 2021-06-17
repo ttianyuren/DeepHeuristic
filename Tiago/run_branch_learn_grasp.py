@@ -198,7 +198,7 @@ def main():
     """TODO: Here operators should be implemented"""
     stream_info = {'sample-place': StreamInfo(seed_gen_fn=sdg_sample_place(scn), every_layer=15,
                                               free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),      # kann ignoriert werden. set box on random position on table for example. Keep in mind, z-position is wrong 
-                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn.robots[0], scn.dic_body_info)),     # TODO: get grasp type by probabilistic graphical model
+                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn.robots[0], scn.dic_body_info)),      # TODO: get grasp type by probabilistic graphical model
                    'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn.robots[0], all_bodies=scn.all_bodies))#,  # TODO: need a stream to generate base pose
                    #'plan-base-motion': StreamInfo(seed_gen_fn=sdg_motion_base_joint(scn)),
                    }
@@ -224,8 +224,8 @@ def main():
         if ik is not None:
             print("ik:", ik)
         step_simulation()
-        if(i % 1200 == 0):
-            initial_conf = get_initial_conf('top')
+        if(False):
+            initial_conf = get_initial_conf('right')
             position = [0, -0.8, 0]
             startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
 
