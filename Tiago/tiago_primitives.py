@@ -171,8 +171,8 @@ class sdg_sample_grasp(object):
 
 
         """ee_frame wrt ellipsoid_frame"""
-        #grasp_pose = random.sample(list_grasp, 1)[0]
-        grasp_pose = list_grasp[0]
+        grasp_pose = random.sample(list_grasp, 1)[0]
+        
         """ee_frame wrt measure_frame: get_pose()"""
         grasp_pose = multiply(invert(get_pose(body)), pose_from_tform(ellipsoid_frame), grasp_pose)
 
