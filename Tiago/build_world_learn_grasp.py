@@ -27,7 +27,7 @@ class BuildWorldScenario(object):
                 #table = (länge = 1.5, breite = 1)
                 self.pos_table = [0, 0, 0.58]
                 self.table_config = [1.5, 1, 0.58]
-                self.grasp_type = 'left'
+                self.grasp_type = 'behind'
 
                 """ Load Table in the simulation"""
                 self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
@@ -37,7 +37,7 @@ class BuildWorldScenario(object):
 
 
                 """ TIAGO ROBOT INIZIALIZATION """
-                startPosition = [0, -0.8, 0]
+                startPosition = [0, -.8, 0]
                 startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
                 
                 self.tiago = load_pybullet("../Tiago/tiago_description/tiago.urdf",
@@ -97,7 +97,7 @@ class BuildWorldScenario(object):
 
 
     def setBoxPositionAndOrientation(self):
-        box1_pos = [0.2, -0.2, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
+        box1_pos = [0, -.4, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
         self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
 
 
@@ -132,7 +132,7 @@ class BuildWorldScenario(object):
 
     def load_start_orientation(self):
         w = np.random.uniform(0, 2 * np.pi)
-        startOrientationRPY = [0, 0, w]
+        startOrientationRPY = [0, 0, 0]
 
         #print("Orientation: {}".format(p.getQuaternionFromEuler(startOrientationRPY)))
         return p.getQuaternionFromEuler(startOrientationRPY)

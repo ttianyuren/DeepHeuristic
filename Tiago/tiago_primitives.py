@@ -144,10 +144,31 @@ class sdg_sample_grasp(object):
 
 
         elif grasp_dir == 'front':
-            pass
+            """ee at +X"""
+            swap_z = Pose(euler=[np.pi, 0, 0])
+            d1, d2 = 0., 0.  # [-0.5, 0.5]
+            translate_point = Pose(point=[ex / 2, 0 + d1 * ey, ez / 2 + d2 * ez])
+            for j in range(2):
+                rotate_z = Pose(euler=[0, 0, j * 2 * np.pi + np.pi])
+                grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
+                list_grasp.append(grasp)
+
+            approach_pose = Pose(0.1 * Point(z=-1))  # pose bias wrt end-effector frame
+
 
         elif grasp_dir == 'behind':
-            pass
+            """ee at -X of the ellipsoid_frame"""
+            swap_z = Pose(euler=[- np.pi, 0,  0])
+            # translate_point: choose from the grasping surface with 2 dof
+            d1, d2 = 0., 0.  # [-0.5, 0.5]
+            translate_point = Pose(point=[-ex / 2, 0 - d1 * ey, ez / 2 + d2 * ez])
+            for j in range(2):
+                rotate_z = Pose(euler=[0, 0,  -j * 2 * np.pi])
+                grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
+                list_grasp.append(grasp)
+
+            approach_pose = Pose(0.1 * Point(z=-1))  # pose bias wrt end-effector frame
+
 
         """ee_frame wrt ellipsoid_frame"""
         #grasp_pose = random.sample(list_grasp, 1)[0]

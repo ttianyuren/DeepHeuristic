@@ -154,7 +154,7 @@ INITIAL_GRASP_POSITIONS = {
     'right': RIGHT_GRAP,
     'left': LEFT_GRAP,
     'front': FRONT_GRAP,
-    'back': BACK_GRAP
+    'behind': BACK_GRAP
 }
 
 CARRY_ARM_CONF = {
