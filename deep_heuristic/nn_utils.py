@@ -4,12 +4,12 @@ import torch
 from torch.utils.data import Dataset
 
 
-def load_workspace(file_reach='../training_data/reach.pk'):
+def load_workspace(file_reach='../reach.pk'):
     with open(file_reach, 'rb') as f:
         return pk.load(f)
 
 
-def load_collision(file_reach='../training_data/direction.pk'):
+def load_collision(file_reach='../direction.pk'):
     with open(file_reach, 'rb') as f:
         return pk.load(f)
 

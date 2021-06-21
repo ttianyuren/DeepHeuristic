@@ -2829,14 +2829,17 @@ def body_collision(body1, body2, max_distance=MAX_DISTANCE, visualization=False)
     results = p.getClosestPoints(bodyA=body1, bodyB=body2, distance=max_distance,
                                  physicsClientId=CLIENT)
     visualization = True
-
+    for test in results:
+        body = test[1]
+        if body == 2 and test[3] in range(12, 24, 2):
+            return False
     if visualization:
         for test in results:
             body = test[1]
             link = test[3]
             add_text('{}-{}'.format(body, link), test[5], color=(1, 0.3, 0.3), lifetime=20)
-            # print('{} -x- {}'.format(body, link), test[2], test[5])
-            # print(get_link_name(body, link))
+            print('{} -x- {}'.format(body, link), test[2], test[5])
+            print(get_link_name(body, link))
             draw_point(test[5], size=0.05, color=(1, 0.5, 0.5), width=2, lifetime=20)
             draw_point(test[6], size=0.05, color=(0.5, 1, 0.5), width=2, lifetime=20)
             # dist = test[8]
@@ -3851,7 +3854,7 @@ def inverse_kinematics(robot, link, target_pose, max_iterations=200, custom_limi
         kinematic_conf = inverse_kinematics_helper(robot, link, target_pose, null_space=nullspace)
         if kinematic_conf is None:
             return None, 0.5
-        kinematic_conf = check_joint_limit(robot, kinematic_conf, movable_joints)
+        # kinematic_conf = check_joint_limit(robot, kinematic_conf, movable_joints)
         set_joint_positions(robot, movable_joints, kinematic_conf)
         if is_pose_close(get_link_pose(robot, link), target_pose, **kwargs):
             break

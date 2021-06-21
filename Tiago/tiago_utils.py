@@ -175,8 +175,8 @@ tool_link: *_gripper_tool_frame   -->
 }"""
 
 
-def get_initial_conf(grasp_type):
-    return INITIAL_GRASP_POSITIONS[grasp_type]
+def get_initial_conf():
+    return REST_ARM
 
 
 def get_joints_from_body(robot, body_part):

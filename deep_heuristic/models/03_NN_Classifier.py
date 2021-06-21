@@ -11,13 +11,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
 
-EPOCHS = 10
+EPOCHS = 100
 BATCH_SIZE = 64
 LEARNING_RATE = 0.001
 
 ################################################## Data Preprocessing ##################################################
 
-train_data, train_labels, eval_data, eval_labels = split_data(load_workspace(), test_size=0.2, num_of_param=3)
+train_data, train_labels, eval_data, eval_labels = split_data(load_workspace(), test_size=0.01, num_of_param=3)
 
 scaler = StandardScaler()
 X_train = scaler.fit_transform(train_data)
@@ -106,3 +106,5 @@ with torch.no_grad():
 y_pred_list = [a.squeeze().tolist() for a in y_pred_list]
 confusion_matrix(eval_labels, y_pred_list)
 print(classification_report(eval_labels, y_pred_list))
+
+torch.save(model.state_dict(), "NN_Model_3.pk")

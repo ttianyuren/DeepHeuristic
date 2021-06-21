@@ -13,8 +13,9 @@ from utils.pybullet_tools.darias_primitives import BodyConf
 from utils.pybullet_tools.utils import LockRenderer, enable_gravity, step_simulation, WorldSaver, connect, set_pose, \
     Pose, Point, set_default_camera, stable_z, SINK_URDF, STOVE_URDF, load_model, \
     disconnect, TABLE_URDF, get_bodies, HideOutput, create_box, load_pybullet, Euler, get_movable_joints, \
-    set_joint_positions, set_point, load_pybullet, step_simulation, Euler, get_links, get_link_info, get_movable_joints, set_joint_positions, \
-    set_camera, get_center_extent, tform_from_pose, attach_viewcone, LockRenderer, load_model, set_point, get_pose, get_link_name
+    set_joint_positions, set_point, load_pybullet, step_simulation, Euler, get_links, get_link_info,\
+    get_movable_joints, set_joint_positions, set_camera, get_center_extent, tform_from_pose, attach_viewcone,\
+    LockRenderer, load_model, set_point, get_pose, get_link_name, set_collision_group_mask
 
 from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf
 
@@ -27,7 +28,6 @@ class BuildWorldScenario(object):
                 #table = (länge = 1.5, breite = 1)
                 self.pos_table = [0, 0, 0.58]
                 self.table_config = [1.5, 1, 0.58]
-                self.grasp_type = 'behind'
 
                 """ Load Table in the simulation"""
                 self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
@@ -46,7 +46,7 @@ class BuildWorldScenario(object):
 
                 self.setStartPositionAndOrienation(self.tiago, startPosition, startOrientation)
 
-                initial_conf = get_initial_conf(self.grasp_type)
+                initial_conf = get_initial_conf()
 
                 #Configure Arm Position and Torso Position in the beginning of the simulation
                 set_group_conf(self.tiago, 'arm', initial_conf)
@@ -92,12 +92,17 @@ class BuildWorldScenario(object):
 
             self.dic_body_info[b] = (obj_extent, relative_frame_bottom, relative_frame_center)
 
+        for b in self.movable_bodies + self.regions + self.env_bodies:
+            set_collision_group_mask(b, int('0011', 2), int('0011', 2))
+        for b in self.robots:
+            set_collision_group_mask(b, int('0001', 2), int('0001', 2))
+
         set_camera(160, -35, 2.1, Point())
         self.saved_world = WorldSaver()
 
 
     def setBoxPositionAndOrientation(self):
-        box1_pos = [0, -.4, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
+        box1_pos = [0, .0, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
         self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
 
 

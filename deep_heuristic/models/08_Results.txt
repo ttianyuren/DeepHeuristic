@@ -1,34 +1,39 @@
-Epoch 100: | Loss: 0.16473 | Acc: 93.141 | lr: 0.0001 | train: 99%
-
+Epoch 1000: | Loss: 0.13952 | Acc: 94.472 | lr: 0.0001 | train: 90%
               precision    recall  f1-score   support
 
-         0.0       0.96      0.95      0.95      7997
-         1.0       0.88      0.91      0.90      3480
+         0.0       0.97      0.91      0.94      1581
+         1.0       0.88      0.96      0.92      1163
 
-    accuracy                           0.94     11477
-   macro avg       0.92      0.93      0.92     11477
-weighted avg       0.94      0.94      0.94     11477
+    accuracy                           0.93      2744
+   macro avg       0.93      0.93      0.93      2744
+weighted avg       0.93      0.93      0.93      2744
 
-
-Epoch 100: | Loss: 0.14176 | Acc: 94.417 | lr: 0.001 | train: 99%
-
+Epoch 1000: | Loss: 0.10867 | Acc: 96.026 | lr: 0.001 | train: 90%
               precision    recall  f1-score   support
 
-         0.0       0.97      0.96      0.96      7997
-         1.0       0.90      0.94      0.92      3480
+         0.0       0.96      0.92      0.94      1581
+         1.0       0.90      0.94      0.92      1163
 
-    accuracy                           0.95     11477
-   macro avg       0.94      0.95      0.94     11477
-weighted avg       0.95      0.95      0.95     11477
+    accuracy                           0.93      2744
+   macro avg       0.93      0.93      0.93      2744
+weighted avg       0.93      0.93      0.93      2744
+weighted avg       0.95      0.95      0.95     17419
 
-
-Epoch 100: | Loss: 0.14173 | Acc: 94.546 | lr: 0.001 | train: 80%
-
+Epoch 100: | Loss: 0.14179 | Acc: 94.391 | lr: 0.001 | train: 90%
               precision    recall  f1-score   support
 
-         0.0       0.97      0.95      0.96      9130
-         1.0       0.89      0.94      0.92      4266
+         0.0       0.97      0.94      0.95     10492
+         1.0       0.92      0.96      0.94      7836
 
-    accuracy                           0.95     13396
-   macro avg       0.93      0.94      0.94     13396
-weighted avg       0.95      0.95      0.95     13396
+    accuracy                           0.95     18328
+   macro avg       0.94      0.95      0.95     18328
+weighted avg       0.95      0.95      0.95     18328
+
+Epoch 100: | Loss: 0.13822 | Acc: 94.515 | lr: 0.001 | train: 99%
+              precision    recall  f1-score   support
+
+         0.0       0.97      0.94      0.96      9962
+         1.0       0.93      0.96      0.94      7457
+
+    accuracy                           0.95     17419
+   macro avg       0.95      0.95      0.95     17419

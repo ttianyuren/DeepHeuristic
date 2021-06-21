@@ -78,6 +78,42 @@ class BodyGrasp(object):
     def __repr__(self):
         return 'g{}'.format(id(self) % 1000)
 
+
+class sdg_sample_grasp_dir(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, input_tuple, seed=None):
+        body = input_tuple # the target body (aka the box)
+
+        list_available = [0, 1, 2, 3, 4]
+        if seed is None:
+            idx = random.sample(list_available, 1)[0]
+        else:
+            idx = np.array([seed]).flatten()[0]
+
+        direction = list_available[idx]
+
+        return (GraspDirection(body, 0),)
+
+
+class sdg_sample_base_position(object):
+    def __init__(self, all_bodies=[]):
+        self.all_bodies = all_bodies
+
+    def __call__(self, input_tuple, seed=None):
+        body, surface = input_tuple
+        others = list(set(self.all_bodies) - {body, surface})
+        """1) Generation"""
+        pose = sample_placement_seed(body, surface, seed)
+        """2) Validation"""
+        if (pose is None) or any(pairwise_collision(body, b) for b in others):
+            return None
+
+        body_pose = BodyPose(body, pose)
+        return (body_pose,)  # return a tuple
+
+
 class sdg_sample_grasp(object):
     def __init__(self, robot, dic_body_info):
         self.robot = robot
@@ -105,7 +141,7 @@ class sdg_sample_grasp(object):
 
         translate_z = Pose(point=[0, 0, -0.001])
         list_grasp = []
-        if grasp_dir == 'top':
+        if grasp_dir == 2:
             """ee at +Z of the ellipsoid_frame"""
             swap_z = Pose(euler=[0, np.pi / 2, 0])
             d1, d2 = 0., -0.  # [-0.5, 0.5]
@@ -117,7 +153,7 @@ class sdg_sample_grasp(object):
 
             approach_pose = Pose(0.1 * Point(x=-1))  # pose bias wrt end-effector frame
 
-        elif grasp_dir == 'left':
+        elif grasp_dir == 4:
             """ee at -Y"""
             swap_z = Pose(euler=[0, 0, np.pi / 2])
             d1, d2 = 0., 0.  # [-0.5, 0.5]
@@ -130,7 +166,7 @@ class sdg_sample_grasp(object):
             approach_pose = Pose(0.1 * Point(z=1))  # pose bias wrt end-effector frame
 
 
-        elif grasp_dir == 'right':
+        elif grasp_dir == 1:
             """ee at +Y"""
             swap_z = Pose(euler=[0, 0, - np.pi / 2])
             d1, d2 = 0., 0.  # [-0.5, 0.5]
@@ -143,7 +179,7 @@ class sdg_sample_grasp(object):
             approach_pose = Pose(0.1 * Point(z=-1))  # pose bias wrt end-effector frame
 
 
-        elif grasp_dir == 'front':
+        elif grasp_dir == 0:
             """ee at +X"""
             swap_z = Pose(euler=[np.pi, 0, 0])
             d1, d2 = 0., 0.  # [-0.5, 0.5]
@@ -156,7 +192,7 @@ class sdg_sample_grasp(object):
             approach_pose = Pose(0.1 * Point(z=-1))  # pose bias wrt end-effector frame
 
 
-        elif grasp_dir == 'behind':
+        elif grasp_dir == 3:
             """ee at -X of the ellipsoid_frame"""
             swap_z = Pose(euler=[- np.pi, 0,  0])
             # translate_point: choose from the grasping surface with 2 dof
@@ -183,7 +219,7 @@ class sdg_sample_grasp(object):
     def __call__(self, input_tuple, seed=None):
         return self.search(input_tuple, seed=None)
 
-DISABLED_COLLISION_PAIR = {(5, 7)}
+DISABLED_COLLISION_PAIR = {(12, 0), (14, 0), (16, 0), (18, 0), (20, 0), (22, 0)}
 
 
 class GraspDirection(object):
@@ -213,7 +249,7 @@ class sdg_ik_grasp(object):
 
         set_pose(body, pose.value)
 
-        obstacles = list(set(self.all_bodies) - {grasp.body})
+        obstacles = list(set(self.all_bodies) - {grasp.body, 12, 14, 16, 18, 20, 22})
 
         grasp_pose_ee = multiply(pose.value, grasp.grasp_pose)  # in world frame
         approach_pose_ee = multiply(grasp_pose_ee, grasp.approach_pose)  # 右乘,以当前ee坐标系为基准进行变换
@@ -225,8 +261,8 @@ class sdg_ik_grasp(object):
         list_command_approach = []
 
         for _ in range(self.num_attempts):
-            # sampled_conf = self.sample_fn()
-            # set_joint_positions(self.robot, self.movable_joints, sampled_conf)  # Random seed
+            sampled_conf = self.sample_fn()
+            set_joint_positions(self.robot, self.movable_joints, sampled_conf)  # Random seed
 
             q_approach = inverse_kinematics(self.robot, grasp.link, approach_pose_ee)
             q_grasp = inverse_kinematics(self.robot, grasp.link, grasp_pose_ee)
@@ -289,6 +325,36 @@ class sdg_ik_grasp(object):
             return None
         else:
             return approach_conf, command
+
+DEBUG_FAILURE = False
+
+class sdg_plan_free_motion(object):
+    def __init__(self, robot, all_bodies=[], teleport=False, self_collisions=True):
+        self.all_bodies = all_bodies
+        self.teleport = teleport
+        self.self_collisions = self_collisions
+        self.robot = robot
+        self.max_distance = MAX_DISTANCE
+
+    def __call__(self, input_tuple, seed=None):
+        conf1, conf2 = input_tuple
+
+        assert ((conf1.body == conf2.body) and (conf1.joints == conf2.joints))
+        if self.teleport:
+            path = [conf1.configuration, conf2.configuration]
+        else:
+            conf1.assign()
+            # obstacles = fixed + assign_fluent_state(fluents)
+            obstacles = self.all_bodies
+            path = plan_joint_motion(self.robot, conf2.joints, conf2.configuration, obstacles=obstacles,
+                                     self_collisions=self.self_collisions, disabled_collisions=DISABLED_COLLISION_PAIR,
+                                     max_distance=self.max_distance)
+            if path is None:
+                if DEBUG_FAILURE: user_input('Free motion failed')
+                return None
+        command = Command([BodyPath(self.robot, path, joints=conf2.joints)])
+        return (command,)  # return a tuple
+
 
 
 class ApplyForce(object):

@@ -208,7 +208,6 @@ def main():
                    'pick': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
                    }
 
-
     st = time.time()
 
     with open('C_operatorPlans/C_op_sas.1.pk', 'rb') as f:

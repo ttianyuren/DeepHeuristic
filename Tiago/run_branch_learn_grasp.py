@@ -14,7 +14,8 @@ from etamp.stream import StreamInfo
 
 from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf, get_joints_from_body, Tiago_limits
 
-from Tiago.tiago_primitives import BodyPose, sdg_sample_place, sdg_sample_grasp, sdg_ik_grasp, sdg_motion_base_joint, GraspDirection
+from Tiago.tiago_primitives import BodyPose, sdg_sample_place, sdg_sample_grasp, sdg_ik_grasp, sdg_motion_base_joint,\
+    GraspDirection, sdg_plan_free_motion, sdg_sample_grasp_dir, sdg_sample_base_position
 
 from utils.pybullet_tools.pr2_primitives import  Conf, get_ik_ir_gen, get_motion_gen, \
     get_stable_gen, get_grasp_gen, Attach, Detach, Clean, Cook, control_commands, \
@@ -196,24 +197,28 @@ def main():
     ## TODO Calculate GraspDirection
 
     """TODO: Here operators should be implemented"""
-    stream_info = {'sample-place': StreamInfo(seed_gen_fn=sdg_sample_place(scn), every_layer=15,
-                                              free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),      # kann ignoriert werden. set box on random position on table for example. Keep in mind, z-position is wrong 
-                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn.robots[0], scn.dic_body_info)),      # TODO: get grasp type by probabilistic graphical model
-                   'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn.robots[0], all_bodies=scn.all_bodies))#,  # TODO: need a stream to generate base pose
-                   #'plan-base-motion': StreamInfo(seed_gen_fn=sdg_motion_base_joint(scn)),
+    stream_info = {'sample_grasp_direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(), free_generator=False),
+                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn.robots[0], scn.dic_body_info),
+                                              free_generator=False),# TODO: get grasp type by probabilistic graphical model
+                   'sample_base_position': StreamInfo(seed_gen_fn=sdg_sample_base_position(scn.all_bodies),
+                                                      every_layer=15, free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),
+                   'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn.robots[0], all_bodies=scn.all_bodies),
+                                                    free_generator=False),  # TODO: need a stream to generate base pose
+                   'plan_free_motion': StreamInfo(seed_gen_fn=sdg_plan_free_motion(robot, scn.all_bodies),
+                                                  free_generator=False)
                    }
 
-    action_info = {'move_base': ActionInfo(optms_cost_fn=get_const_cost_fn(5), cost_fn=get_const_cost_fn(5)),
-                   'place': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
-                   'pick': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
+    action_info = {'move_free_base': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
+                   'move_free_arm': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
+                   'pick': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1))
                    }
     
 
     i = 0
     while(is_connected()):
-        #set Grasp direction
-        grasp_dir = GraspDirection(box_id, scn.grasp_type)
-
+        # set Grasp direction
+        # grasp_dir = GraspDirection(box_id, scn.grasp_type)
+        grasp_dir = stream_info['sample_grasp_direction'].seed_gen_fn((box_id, ))[0]
         # f_ik_grasp = sdg_ik_grasp(robot, scn.all_bodies)
 
         ### SETUP: Position and Orientation of Box, Table, robot, IDs are bodys                    
@@ -221,8 +226,6 @@ def main():
         box_grasp = stream_info['sample-grasp'].seed_gen_fn((box_id, grasp_dir))[0]
 
         ik = stream_info['inverse-kinematics'].seed_gen_fn((box_id, box_pose, box_grasp))
-        if ik is not None:
-            print("ik:", ik)
         step_simulation()
         if(False):
             initial_conf = get_initial_conf('right')
@@ -255,11 +258,8 @@ def main():
     scn = BuildWorldScenario()
     scn.get_elemetns()"""
 
-    
-        
-        
-
-    """with open('PR2/TASK_cook/C_operatorPlans/C_op_sas.1.pk', 'rb') as f:
+    """
+    with open('PR2/TASK_cook/C_operatorPlans/C_op_sas.1.pk', 'rb') as f:
          op_plan = pk.load(f)
     print(op_plan)
     print("stream_info: ", stream_info['sample-place'])
