@@ -186,39 +186,40 @@ def play_commands(commands):
 
 
 def get_op_plan(robot_pose, box_pose, table_pose, conf, path=None):
-    if os.path.exists(path):
+    if path is not None and os.path.exists(path):
         with open(path, 'rb') as f:
-            op_plan =  pk.load(f)
+            op_plan = pk.load(f)
     else:
         oBody = EXE_Object(pddl='o' + str(box_pose.body), value=box_pose.value)
-        oRegion = EXE_Object(pddl='o' + str(table_pose.body), value=table_pose.value)
+        # oRegion = EXE_Object(pddl='o' + str(table_pose.body), value=table_pose.value)
         oBodyPose = EXE_Object(pddl='pInit' + str(robot_pose.body),
                                value=robot_pose.value)  # p72        #TODO: value = joints ???
+        oFloorID = 1
         oConf = EXE_Object(pddl='qInit', value=conf)  # q800         #TODO: value = conf ???        conf von  plan-free-motion
-        oArm = EXE_Object(pddl='', value=None)
+        # oArm = EXE_Object(pddl='', value=None)
 
         # open variables
         voG0 = EXE_OptimisticObject(pddl='#g0', repr_name='#g0', value=None)
         voQ0 = EXE_OptimisticObject(pddl='#q0', repr_name='#q0', value=None)
         voT1 = EXE_OptimisticObject(pddl='#t1', repr_name='#t1', value=None)
         voQ11 = EXE_OptimisticObject(pddl='#q11', repr_name='#q11', value=None)
-        voT85 = EXE_OptimisticObject(pddl='#t85', repr_name='#t85', value=None)
-        voT480 = EXE_OptimisticObject(pddl='#t480', repr_name='#t480', value=None)
+        # voT85 = EXE_OptimisticObject(pddl='#t85', repr_name='#t85', value=None)
+        # voT480 = EXE_OptimisticObject(pddl='#t480', repr_name='#t480', value=None)
         voT37 = EXE_OptimisticObject(pddl='#t37', repr_name='#t37', value=None)
-        voT12 = EXE_OptimisticObject(pddl='#t12', repr_name='#t12', value=None)
+        # voT12 = EXE_OptimisticObject(pddl='#t12', repr_name='#t12', value=None)
         voP2 = EXE_OptimisticObject(pddl='#p2', repr_name='#p2', value=None)
 
         op_plan = [EXE_Stream(inputs=(oBody,),
                               name='sample-grasp-direction',
-                              outputs=(voG0,)),
+                              outputs=(voG0,)), # grasp_dir
 
-                   EXE_Stream(inputs=(oBody,),
+                   EXE_Stream(inputs=(oBody, voG0),
                               name='sample-grasp',
-                              outputs=(voG0,)),
+                              outputs=(voG0,)), # box_grasp
 
-                   EXE_Stream(inputs=(oBodyPose,),
+                   EXE_Stream(inputs=(oBodyPose, oFloorID),
                               name='sample-base-position',
-                              outputs=(voG0,)),
+                              outputs=(voQ0,)),
 
                    EXE_Stream(inputs=(oConf, voQ0,),
                               name='plan-free-motion',
@@ -228,34 +229,35 @@ def get_op_plan(robot_pose, box_pose, table_pose, conf, path=None):
                               name='move-free-base',
                               parameters=(oConf, voQ0, voT37,)),
 
-                   EXE_Stream(inputs=(oArm, oBody, voP2, voG0,),
+                   EXE_Stream(inputs=(oBody, voP2, voG0,), # oArm
                               name='inverse-kinematics',
-                              outputs=(voQ11, voT12,)),
+                              outputs=(voQ11, voT1,)),
 
-                   EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ0,)),),
+                   EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ11,)),),
                               name='move-free-arm',
-                              parameters=(oConf, voQ0, voT37,)),
+                              parameters=(voQ0, voQ11, voT1,)),
 
-                   EXE_Action(add_effects=(pAtom(name='atgrasp', args=(oArm, oBody, voG0,)),),
+                   EXE_Action(add_effects=(pAtom(name='atgrasp', args=(oBody, voG0,)),),
                               name='pick',
-                              parameters=(oArm, oBody, oBodyPose, voG0, voQ0, voT1,)),
-
-                   """ Ab hier kann erstmal ignoriert werden   """
-
-                   #EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ0,)),),
-                   #           name='move-free-base',
-                   #           parameters=(oConf, voQ0, voT37,)),
-
-                   #EXE_Stream(inputs=(oBody,),
-                   #           name='plan-free-motion',
-                   #           outputs=(voG0,)),
-                   #EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ0,)),),
-                   #           name='place',
-                   #           parameters=(oConf, voQ0, voT37,)),
-                   #EXE_Action(add_effects=(pAtom(name='atbconf', args=(oConf,)),),
-                   #           name='move-free-base',
-                   #           parameters=(voQ11, oConf, voT480,)),
+                              parameters=(oBody, oBodyPose, voG0, voQ0, voT1,)),
                    ]
+
+    """ Ab hier kann erstmal ignoriert werden   """
+
+   #EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ0,)),),
+   #           name='move-free-base',
+   #           parameters=(oConf, voQ0, voT37,)),
+
+   #EXE_Stream(inputs=(oBody,),
+   #           name='plan-free-motion',
+   #           outputs=(voG0,)),
+   #EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ0,)),),
+   #           name='place',
+   #           parameters=(oConf, voQ0, voT37,)),
+   #EXE_Action(add_effects=(pAtom(name='atbconf', args=(oConf,)),),
+   #           name='move-free-base',
+   #           parameters=(voQ11, oConf, voT480,)),
+
     return op_plan
 
 
@@ -267,12 +269,12 @@ def main():
     connect(use_gui=visualization)
     scn = BuildWorldScenario()
 
-
     """         SETUP: Position and Orientation of Box, Table, robot, IDs are bodys                 """
+    box_id = 3
     robot_pose = BodyPose(scn.robots[0])
     box_pose = BodyPose(scn.movable_bodies[0])      #TODO change if more we have more boxes on the table
     table_pose = BodyPose(scn.regions[0])
-    body_conf = BodyConf()
+    robot_conf = BodyConf(scn.robots[0])
 
     ## TODO Calculate GraspDirection
 
@@ -294,26 +296,32 @@ def main():
                    'place': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1))
                    }
 
-    op_plan = get_op_plan(robot_pose, box_pose, table_pose)
-
-    i = 0
+    op_plan = get_op_plan(robot_pose, box_pose, table_pose, robot_conf)
+    print(op_plan)
+    """
     while(is_connected()):
         # set Grasp direction
         # grasp_dir = GraspDirection(box_id, scn.grasp_type)
-        grasp_dir = stream_info['sample_grasp_direction'].seed_gen_fn((box_pose.body, ))[0]
+        grasp_dir = stream_info['sample-grasp-direction'].seed_gen_fn((box_pose.body, ))[0]
         # f_ik_grasp = sdg_ik_grasp(robot, scn.all_bodies)
 
 
         box_grasp = stream_info['sample-grasp'].seed_gen_fn((box_pose.body, grasp_dir))[0]
 
-        ik = stream_info['inverse-kinematics'].seed_gen_fn((box_pose.body, box_pose, box_grasp))
+        sbp = stream_info["sample-base-position"].seed_gen_fn((box_grasp, 1, scn.dic_body_info[box_id]))
+        if sbp is not None:
+            print(sbp)
+            # time.sleep(2)
+            # ik = stream_info['inverse-kinematics'].seed_gen_fn((box_pose.body, box_pose, box_grasp))
+
+
         step_simulation()
-        i = i + 1
 
-    op_plan = get_op_plan(robot_pose, box_pose, table_pose)
 
-    e_root = ExtendedNode()
-    assert op_plan is not None
+        op_plan = get_op_plan(robot_pose, box_pose, table_pose, robot_conf)
+    """
+    # e_root = ExtendedNode()
+    # assert op_plan is not None
 
 
     """Here use tree search to bind open variables"""

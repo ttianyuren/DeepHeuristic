@@ -94,24 +94,53 @@ class sdg_sample_grasp_dir(object):
 
         direction = list_available[idx]
 
-        return (GraspDirection(body, 0),)
+        return (GraspDirection(body, 2),)
 
 
 class sdg_sample_base_position(object):
     def __init__(self, all_bodies=[]):
         self.all_bodies = all_bodies
 
-    def __call__(self, input_tuple, seed=None):
-        body, surface = input_tuple
-        others = list(set(self.all_bodies) - {body, surface})
-        """1) Generation"""
-        pose = sample_placement_seed(body, surface, seed)
-        """2) Validation"""
-        if (pose is None) or any(pairwise_collision(body, b) for b in others):
-            return None
+    def __call__(self, input_tuple, num_of_attempts=100, seed=None):
+        box_grasp, surface, box_info = input_tuple
+        robot = box_grasp.robot
+        box_id = box_grasp.body
+        obstacles = list(set(self.all_bodies) - {robot, surface})
+        while num_of_attempts > 0:
+            num_of_attempts -= 1
+            """1) Generation"""
+            pose1 = sample_placement_seed(robot, surface, seed)
+            """2) Validation"""
+            if (pose1 is None) or any(pairwise_collision(robot, b) for b in obstacles):
+                continue
+            pose = setOrientationToObject(pose1, robot, box_id)
+            if not target_reachable(box_grasp.grasp_pose[0], box_id, box_info, robot):
+                continue
+            body_conf = BodyConf(robot)
+            return body_conf
+            # body_pose = BodyPose(robot, pose)
+            # return (body_pose,)  # return a tuple
+        return None
 
-        body_pose = BodyPose(body, pose)
-        return (body_pose,)  # return a tuple
+
+def setOrientationToObject(pose, robot, box_id):
+    theta = getZRotation(robot, box_id)
+    quat = p.getQuaternionFromEuler([0, 0, theta])
+    new_pose = (pose[0], quat)
+    set_pose(robot, new_pose)
+    return new_pose
+
+def getZRotation(robot, box_id):
+    robot_pose = np.array(get_pose(robot)[0])
+    box_pose = np.array(get_pose(box_id)[0])
+    target_pose = box_pose - robot_pose
+    rad = math.atan2(target_pose[1], target_pose[0])
+    return (rad + 2 * np.pi) % (2*np.pi)
+
+def target_reachable(grasp_pose, box_id, box_info, robot):
+    ellipsoid_frame, obj_extent, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(box_id, box_info, robot)
+
+    return list_dist[0] <= 0.8
 
 
 class sdg_sample_grasp(object):
@@ -299,13 +328,15 @@ class sdg_ik_grasp(object):
                                                         disabled_collisions=DISABLED_COLLISION_PAIR,
                                                         max_distance=self.max_distance)
                         if path:
+                            trajectory = create_trajectory(self.robot, self.movable_joints, path)
                             command = Command([BodyPath(self.robot, path),
                                                Attach(body, self.robot, grasp.link),
                                                BodyPath(self.robot, path[::-1], attachments=[grasp])])
-                list_command_approach.append(command)
-                if command:
+                # list_command_approach.append(command)
+                list_command_approach.append(trajectory)
+                if trajectory:
                     set_joint_positions(self.robot, self.movable_joints, list_q_grasp[0])
-                    return approach_conf, command, q_approach, q_grasp
+                    return approach_conf, trajectory, q_approach, q_grasp
 
         # jp = get_joint_positions(self.robot, self.movable_joints)
         # ee_pose = get_link_pose(self.robot, grasp.link)
@@ -352,8 +383,9 @@ class sdg_plan_free_motion(object):
             if path is None:
                 if DEBUG_FAILURE: user_input('Free motion failed')
                 return None
-        command = Command([BodyPath(self.robot, path, joints=conf2.joints)])
-        return (command,)  # return a tuple
+        return create_trajectory(self.robot, conf2.joints, path)
+        # command = Command([BodyPath(])
+        # return (command,)  # return a tuple
 
 
 

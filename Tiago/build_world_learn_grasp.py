@@ -33,7 +33,7 @@ class BuildWorldScenario(object):
                 self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
 
                 """ Load floor to simulation """
-                self.floor = load_model('../Tiago/scenario_description/plane.urdf', fixed_base=True)
+                self.floor = load_model('models/short_floor.urdf', fixed_base=True)
 
 
                 """ TIAGO ROBOT INIZIALIZATION """

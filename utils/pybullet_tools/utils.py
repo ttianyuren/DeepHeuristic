@@ -2828,11 +2828,11 @@ def body_collision(body1, body2, max_distance=MAX_DISTANCE, visualization=False)
     # TODO: confirm that this doesn't just check the base link
     results = p.getClosestPoints(bodyA=body1, bodyB=body2, distance=max_distance,
                                  physicsClientId=CLIENT)
-    visualization = True
-    for test in results:
-        body = test[1]
-        if body == 2 and test[3] in range(12, 24, 2):
-            return False
+    visualization = False
+    #for test in results:
+    #    body = test[1]
+    #    if body == 2 and test[3] in range(12, 24, 2):
+    #        return False
     if visualization:
         for test in results:
             body = test[1]
