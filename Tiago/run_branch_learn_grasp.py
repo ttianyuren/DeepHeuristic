@@ -279,7 +279,7 @@ def main():
     ## TODO Calculate GraspDirection
 
     """TODO: Here operators should be implemented"""
-    stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(), free_generator=False),
+    stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(), free_generator=True, discrete=True, p1=[0, 1, 2, 3, 4], p2=[.2, .2, .2, .2, .2]),
                    'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(robot_pose.body, scn.dic_body_info),
                                               free_generator=False),
                    'sample-base-position': StreamInfo(seed_gen_fn=sdg_sample_base_position(scn.all_bodies),

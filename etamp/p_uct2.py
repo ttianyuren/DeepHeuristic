@@ -197,7 +197,7 @@ class PlannerUCT(object):
             flag_pw = cur_node.visits > 0.5 * (len(cur_node.children) ** 2)
             if (flag_pw or (not cur_node.active_children)) and cur_node.is_expandable:
                 next_node = Node(cur_node.depth + 1, cur_node, self.env)
-                self.update_graph(cur_node, next_node)
+                self.update_graph(cur_node, next_node) # visu
             else:
                 next_node = cur_node.select_child_ucb(ucb_const=0.02)
         else:

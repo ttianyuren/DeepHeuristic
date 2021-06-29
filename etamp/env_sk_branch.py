@@ -111,16 +111,12 @@ class SkeletonEnv(object):
         self.dict_decision_info = {}
         self.dict_transition_info = {}
 
-    def add_victim_role(self, step, ctype, exp_constraint):
-        if ctype not in self.step_to_victim_roles[step]:
-            self.step_to_victim_roles[step].append(ctype)
-            self.ctype_to_constraint[ctype] = exp_constraint
-
     def get_op_info(self, op):
         return self.stream_info[op.name]
 
     @property
     def start_with_transition_node(self):
+        """ Not Needed Probably"""
         if not self.decision_steps:
             return True
         if self.decision_steps[0] != 0:
