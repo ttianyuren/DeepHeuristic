@@ -242,9 +242,9 @@ class PlannerUCT(object):
             self.play_simulation(self.root_node)
             # print('rootSize: ', asizeof(self.root_node))
             # print('dict_Size: ', asizeof(self.id_to_node))
-            if i < 1000 and show_tree_nodes:
-                self.visualization()
-            print(
+            # if i < 1000 and show_tree_nodes:
+            #     self.visualization()
+            """print(
                 'SK-{}, visits {}, value {:.3f}, nodes {}, playout {}/{}, max_depth {}/{}, p_stream {}'.format(
                     self.env.skeleton_id,
                     self.visits,
@@ -253,19 +253,20 @@ class PlannerUCT(object):
                     i, num_playout,
                     self.get_best_node().depth,
                     self.env.num_depth, self.env.problematic_streams[0] if self.env.problematic_streams else None))
+            """
             if self.list_vplan:
                 thinking_time = time.time() - st
                 # print('  Binding think_time: ', thinking_time)
-                if i < 1000 and show_tree_nodes:
-                    self.visualization()
+                # if i < 1000 and show_tree_nodes:
+                #     self.visualization()
                 self.save_nodes()
                 self.report_vnt = (self.visits, self.total_node, thinking_time)
                 return self.give_best_plan()
 
         thinking_time = time.time() - st
         # print('Binding think_time: ', thinking_time)
-        if num_playout < 1000 and show_tree_nodes:
-            self.visualization()
+        # if num_playout < 1000 and show_tree_nodes:
+        #     self.visualization()
         self.save_nodes()
 
         return self.give_best_plan()

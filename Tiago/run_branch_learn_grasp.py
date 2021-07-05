@@ -16,7 +16,7 @@ from etamp.stream import StreamInfo
 from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf, get_joints_from_body, Tiago_limits
 
 from Tiago.tiago_primitives import BodyPose, sdg_sample_place, sdg_sample_grasp, sdg_ik_grasp, sdg_motion_base_joint,\
-    GraspDirection, sdg_plan_free_motion, sdg_sample_grasp_dir, sdg_sample_base_position, BodyConf
+    GraspDirection, sdg_plan_free_motion, sdg_sample_grasp_dir, sdg_sample_base_position, BodyConf, BodyInfo
 
 from utils.pybullet_tools.pr2_primitives import  Conf, get_ik_ir_gen, get_motion_gen, \
     get_stable_gen, get_grasp_gen, Attach, Detach, Clean, Cook, control_commands, \
@@ -185,21 +185,29 @@ def play_commands(commands):
         apply_commands(State(), commands, time_step=0.01)
 
 
-def get_op_plan(robot_pose, box_pose, table_pose, conf, path=None):
+def get_op_plan(scn, path=None):
+    """         SETUP: Position and Orientation of Box, Table, robot, IDs are bodys                 """
+    robot_pose = BodyPose(scn.robots[0])
+    box_pose = BodyPose(scn.movable_bodies[0])      #TODO change if more we have more boxes on the table
+    box_info = BodyInfo(scn, scn.movable_bodies[0])
+    robot_conf = BodyConf(scn.robots[0])
+
     if path is not None and os.path.exists(path):
         with open(path, 'rb') as f:
             op_plan = pk.load(f)
     else:
-        oBody = EXE_Object(pddl='o' + str(box_pose.body), value=box_pose.value)
+        oBody = EXE_Object(pddl='o' + str(box_pose.body), value=box_pose.body)
+        oBodyInfo = EXE_Object(pddl='o' + str(box_info), value=box_info)
         # oRegion = EXE_Object(pddl='o' + str(table_pose.body), value=table_pose.value)
-        oBodyPose = EXE_Object(pddl='pInit' + str(robot_pose.body),
-                               value=robot_pose.value)  # p72        #TODO: value = joints ???
-        oFloorID = 1
-        oConf = EXE_Object(pddl='qInit', value=conf)  # q800         #TODO: value = conf ???        conf von  plan-free-motion
+        oBodyPose = EXE_Object(pddl='pInit' + str(box_pose.body),
+                               value=box_pose)  # p72        #TODO: value = joints ???
+        oFloorID = EXE_Object(pddl='surface', value=1)
+        oConf = EXE_Object(pddl='qInit', value=robot_conf)  # q800         #TODO: value = conf ???        conf von  plan-free-motion
         # oArm = EXE_Object(pddl='', value=None)
 
         # open variables
         voG0 = EXE_OptimisticObject(pddl='#g0', repr_name='#g0', value=None)
+        voG1 = EXE_OptimisticObject(pddl='#g1', repr_name='#g1', value=None)
         voQ0 = EXE_OptimisticObject(pddl='#q0', repr_name='#q0', value=None)
         voT1 = EXE_OptimisticObject(pddl='#t1', repr_name='#t1', value=None)
         voQ11 = EXE_OptimisticObject(pddl='#q11', repr_name='#q11', value=None)
@@ -215,9 +223,9 @@ def get_op_plan(robot_pose, box_pose, table_pose, conf, path=None):
 
                    EXE_Stream(inputs=(oBody, voG0),
                               name='sample-grasp',
-                              outputs=(voG0,)), # box_grasp
+                              outputs=(voG1,)), # box_grasp
 
-                   EXE_Stream(inputs=(oBodyPose, oFloorID),
+                   EXE_Stream(inputs=(voG1, oFloorID, oBodyInfo),
                               name='sample-base-position',
                               outputs=(voQ0,)),
 
@@ -229,7 +237,7 @@ def get_op_plan(robot_pose, box_pose, table_pose, conf, path=None):
                               name='move-free-base',
                               parameters=(oConf, voQ0, voT37,)),
 
-                   EXE_Stream(inputs=(oBody, voP2, voG0,), # oArm
+                   EXE_Stream(inputs=(oBody, oBodyPose, voG1,), # oArm
                               name='inverse-kinematics',
                               outputs=(voQ11, voT1,)),
 
@@ -268,25 +276,17 @@ def main():
     visualization = 1
     connect(use_gui=visualization)
     scn = BuildWorldScenario()
-
-    """         SETUP: Position and Orientation of Box, Table, robot, IDs are bodys                 """
-    box_id = 3
-    robot_pose = BodyPose(scn.robots[0])
-    box_pose = BodyPose(scn.movable_bodies[0])      #TODO change if more we have more boxes on the table
-    table_pose = BodyPose(scn.regions[0])
-    robot_conf = BodyConf(scn.robots[0])
-
     ## TODO Calculate GraspDirection
 
     """TODO: Here operators should be implemented"""
     stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(), free_generator=True, discrete=True, p1=[0, 1, 2, 3, 4], p2=[.2, .2, .2, .2, .2]),
-                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(robot_pose.body, scn.dic_body_info),
+                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn.robots[0], scn.dic_body_info),
                                               free_generator=False),
                    'sample-base-position': StreamInfo(seed_gen_fn=sdg_sample_base_position(scn.all_bodies),
                                                       every_layer=15, free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),
                    'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn.robots[0], all_bodies=scn.all_bodies),
                                                     free_generator=False),
-                   'plan-free-motion': StreamInfo(seed_gen_fn=sdg_plan_free_motion(robot_pose.body, scn.all_bodies),
+                   'plan-free-motion': StreamInfo(seed_gen_fn=sdg_plan_free_motion(scn.robots[0], scn.all_bodies),
                                                   free_generator=False),
                    }
 
@@ -296,43 +296,21 @@ def main():
                    'place': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1))
                    }
 
-    op_plan = get_op_plan(robot_pose, box_pose, table_pose, robot_conf)
+    op_plan = get_op_plan(scn)
     print(op_plan)
-    """
-    while(is_connected()):
-        # set Grasp direction
-        # grasp_dir = GraspDirection(box_id, scn.grasp_type)
-        grasp_dir = stream_info['sample-grasp-direction'].seed_gen_fn((box_pose.body, ))[0]
-        # f_ik_grasp = sdg_ik_grasp(robot, scn.all_bodies)
-
-
-        box_grasp = stream_info['sample-grasp'].seed_gen_fn((box_pose.body, grasp_dir))[0]
-
-        sbp = stream_info["sample-base-position"].seed_gen_fn((box_grasp, 1, scn.dic_body_info[box_id]))
-        if sbp is not None:
-            print(sbp)
-            # time.sleep(2)
-            # ik = stream_info['inverse-kinematics'].seed_gen_fn((box_pose.body, box_pose, box_grasp))
-
-
-        step_simulation()
-
-
-        op_plan = get_op_plan(robot_pose, box_pose, table_pose, robot_conf)
-    """
-    # e_root = ExtendedNode()
-    # assert op_plan is not None
-
+    e_root = ExtendedNode()
+    assert op_plan is not None
 
     """Here use tree search to bind open variables"""
-    """ skeleton_env = SkeletonEnv(e_root.num_children, op_plan,
+    skeleton_env = SkeletonEnv(e_root.num_children, op_plan,
                                get_update_env_reward_fn(scn, action_info),
                                stream_info, scn)
     selected_branch = PlannerUCT(skeleton_env)
     
 
     concrete_plan = selected_branch.think(900, visualization)
-    
+    print(concrete_plan)
+    """ 
     if concrete_plan is None:
         print('TAMP is failed.', concrete_plan)
         disconnect()
@@ -370,7 +348,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-

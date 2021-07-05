@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
 
-EPOCHS = 100
+EPOCHS = 10
 BATCH_SIZE = 64
 LEARNING_RATE = 0.001
 
@@ -48,11 +48,11 @@ nx_dataset = nx_dataset.reshape(-1, 2)
 ny_dataset = ny_dataset.reshape(-1, 2)
 
 # split each dataset to train and evaluate
-x_train_data, x_train_labels, x_eval_data, x_eval_labels = split_data(x_dataset, test_size=0.01, num_of_param=4)
-y_train_data, y_train_labels, y_eval_data, y_eval_labels = split_data(y_dataset, test_size=0.01, num_of_param=4)
-z_train_data, z_train_labels, z_eval_data, z_eval_labels = split_data(z_dataset, test_size=0.01, num_of_param=4)
-nx_train_data, nx_train_labels, nx_eval_data, nx_eval_labels = split_data(nx_dataset, test_size=0.01, num_of_param=4)
-ny_train_data, ny_train_labels, ny_eval_data, ny_eval_labels = split_data(ny_dataset, test_size=0.01, num_of_param=4)
+x_train_data, x_train_labels, x_eval_data, x_eval_labels = split_data(x_dataset, test_size=0.1, num_of_param=4)
+y_train_data, y_train_labels, y_eval_data, y_eval_labels = split_data(y_dataset, test_size=0.1, num_of_param=4)
+z_train_data, z_train_labels, z_eval_data, z_eval_labels = split_data(z_dataset, test_size=0.1, num_of_param=4)
+nx_train_data, nx_train_labels, nx_eval_data, nx_eval_labels = split_data(nx_dataset, test_size=0.1, num_of_param=4)
+ny_train_data, ny_train_labels, ny_eval_data, ny_eval_labels = split_data(ny_dataset, test_size=0.1, num_of_param=4)
 
 # load images
 x_train_pics = np.array([x[-8:, 16:48] for x in x_train_data[:, 3]]).reshape(-1, 256)
@@ -145,7 +145,7 @@ print(net)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 criterion = nn.BCEWithLogitsLoss()
-optimizer = optim.Adam(net.parameters(), lr=LEARNING_RATE)
+optimizer = optim.AdamW(net.parameters(), lr=LEARNING_RATE)
 
 
 ##################################################### Train Model #####################################################
@@ -184,4 +184,4 @@ y_pred_list = [a.squeeze().tolist() for a in y_pred_list]
 confusion_matrix(x_eval_labels, y_pred_list)
 print(classification_report(x_eval_labels, y_pred_list))
 
-torch.save(net.state_dict(), "CNN_Model_8.pk")
+torch.save(net.state_dict(), "CNN_Model_8.0.1.pk")

@@ -103,6 +103,7 @@ class sdg_sample_base_position(object):
 
     def __call__(self, input_tuple, num_of_attempts=100, seed=None):
         box_grasp, surface, box_info = input_tuple
+        box_info = box_info.info
         robot = box_grasp.robot
         box_id = box_grasp.body
         obstacles = list(set(self.all_bodies) - {robot, surface})
@@ -117,7 +118,7 @@ class sdg_sample_base_position(object):
             if not target_reachable(box_grasp.grasp_pose[0], box_id, box_info, robot):
                 continue
             body_conf = BodyConf(robot)
-            return body_conf
+            return (body_conf, )
             # body_pose = BodyPose(robot, pose)
             # return (body_pose,)  # return a tuple
         return None
@@ -126,6 +127,7 @@ class sdg_sample_base_position(object):
 def setOrientationToObject(pose, robot, box_id):
     theta = getZRotation(robot, box_id)
     quat = p.getQuaternionFromEuler([0, 0, theta])
+    new_pose = (pose[0], quat)
     new_pose = (pose[0], quat)
     set_pose(robot, new_pose)
     return new_pose
@@ -152,9 +154,6 @@ class sdg_sample_grasp(object):
     def search(self, input_tuple, seed=None):
         """return the ee_frame wrt the measure_frame of the object"""
         body, grasp_dir = input_tuple  # grasp_dir defined in ellipsoid_frame of the body
-
-        for i in range(0):
-            print(get_link_name(self.robot, i))
 
         assert body == grasp_dir.body
         grasp_dir = grasp_dir.direction
@@ -248,7 +247,7 @@ class sdg_sample_grasp(object):
     def __call__(self, input_tuple, seed=None):
         return self.search(input_tuple, seed=None)
 
-DISABLED_COLLISION_PAIR = {(12, 0), (14, 0), (16, 0), (18, 0), (20, 0), (22, 0)}
+DISABLED_COLLISION_PAIR = {(12, 0), (14, 0), (16, 0), (18, 0), (20, 0), (22, 0), (24, 49), (39, 41), (39, 42)}
 
 
 class GraspDirection(object):
@@ -261,6 +260,15 @@ class GraspDirection(object):
     def __repr__(self):
         return 'gd{}'.format(id(self) % 1000)
 
+class BodyInfo(object):
+    def __init__(self, scn, body):
+        if isinstance(body, tuple):
+            body = body[0]
+        self.body = body
+        self.info = scn.dic_body_info[body]
+
+    def __repr__(self):
+        return 'bi{}'.format(id(self) % 1000)
 
 class sdg_ik_grasp(object):
     def __init__(self, robot, all_bodies=[], teleport=False, num_attempts=30):
@@ -383,7 +391,7 @@ class sdg_plan_free_motion(object):
             if path is None:
                 if DEBUG_FAILURE: user_input('Free motion failed')
                 return None
-        return create_trajectory(self.robot, conf2.joints, path)
+        return (create_trajectory(self.robot, conf2.joints, path), )
         # command = Command([BodyPath(])
         # return (command,)  # return a tuple
 
