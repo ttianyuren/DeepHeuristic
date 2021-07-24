@@ -256,6 +256,8 @@ class sdg_sample_grasp(object):
 
             approach_pose = Pose(0.1 * Point(z=1))  # pose bias wrt end-effector frame
 
+        else:
+            raise ValueError("ValueError exception thrown: grasp_dir is invalid: ", grasp_dir)
 
         """ee_frame wrt ellipsoid_frame"""
         grasp_pose = random.sample(list_grasp, 1)[0]
