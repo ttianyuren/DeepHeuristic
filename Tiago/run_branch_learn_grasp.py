@@ -188,7 +188,8 @@ def play_commands(commands):
 def get_op_plan(scn, target, path=None):
     """         SETUP: Position and Orientation of Box, Table, robot, IDs are bodys                 """
     robot = scn.robots[0]
-    box_pose = BodyPose(target)      # TODO change if we have more boxes on the table
+    floor = scn.env_bodies[0]
+    box_pose = BodyPose(target)
     box_info = BodyInfo(scn, target)
     robot_conf = BodyConf(robot)
 
@@ -196,15 +197,15 @@ def get_op_plan(scn, target, path=None):
         with open(path, 'rb') as f:
             op_plan = pk.load(f)
     else:
-        oBody = EXE_Object(pddl='o' + str(box_pose.body), value=box_pose.body)
+        # initial variables
         oRobot = EXE_Object(pddl='o' + str(robot), value=robot)
         oBodyInfo = EXE_Object(pddl='o' + str(box_info), value=box_info)
-        oBodyPose = EXE_Object(pddl='pInit' + str(box_pose.body),
-                               value=box_pose)  # p72        #TODO: value = joints ???
-        oFloorID = EXE_Object(pddl='surface', value=1)
-        oConf = EXE_Object(pddl='qInit', value=robot_conf)  # q800         #TODO: value = conf ???        conf von  plan-free-motion
+        oBody = EXE_Object(pddl='o' + str(box_pose.body), value=box_pose.body)
+        oBodyPose = EXE_Object(pddl='pInit' + str(box_pose.body), value=box_pose)
+        oFloorID = EXE_Object(pddl='surface', value=floor)
+        oConf = EXE_Object(pddl='qInit', value=robot_conf)
 
-        # open variables
+        # TAMP variables
         voG0 = EXE_OptimisticObject(pddl='#g0', repr_name='#g0', value=None)
         voG1 = EXE_OptimisticObject(pddl='#g1', repr_name='#g1', value=None)
         voQ0 = EXE_OptimisticObject(pddl='#q0', repr_name='#q0', value=None)
@@ -243,7 +244,7 @@ def get_op_plan(scn, target, path=None):
 
                    EXE_Action(add_effects=(pAtom(name='atbpose', args=(oBody, voG0,)),),
                               name='pick',
-                              parameters=(oBody, oBodyPose, voG0, voQ0, voT1,)),""""""
+                              parameters=(oBody, oBodyPose, voG0, voQ0, voT1,))
                    ]
 
     return op_plan
@@ -258,10 +259,9 @@ def main():
 
 
 def run(nn=False, cnn=False):
-    visualization = 0
+    visualization = 1
     connect(use_gui=visualization)
     scn = BuildWorldScenario()
-    ## TODO Calculate GraspDirection
     """TODO: Here operators should be implemented"""
     stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(cnn=cnn), free_generator=True, discrete=True, p1=[0, 1, 2, 3, 4], p2=[.2, .2, .2, .2, .2]),
                    'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn.robots[0], scn.dic_body_info),
@@ -291,13 +291,14 @@ def run(nn=False, cnn=False):
 
     st = time.time()
     concrete_plan = selected_branch.think(900, visualization)
-    # print(concrete_plan)
+
+    thinking_time = time.time() - st
 
     if concrete_plan is None:
         print('TAMP is failed.', concrete_plan)
         disconnect()
         return
-    thinking_time = time.time() - st
+
     print('TAMP is successful. think_time: ', thinking_time)
     time.sleep(0)
     disconnect()
