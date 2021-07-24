@@ -185,25 +185,24 @@ def play_commands(commands):
         apply_commands(State(), commands, time_step=0.01)
 
 
-def get_op_plan(scn, path=None):
+def get_op_plan(scn, target, path=None):
     """         SETUP: Position and Orientation of Box, Table, robot, IDs are bodys                 """
-    robot_pose = BodyPose(scn.robots[0])
-    box_pose = BodyPose(scn.movable_bodies[0])      #TODO change if more we have more boxes on the table
-    box_info = BodyInfo(scn, scn.movable_bodies[0])
-    robot_conf = BodyConf(scn.robots[0])
+    robot = scn.robots[0]
+    box_pose = BodyPose(target)      # TODO change if we have more boxes on the table
+    box_info = BodyInfo(scn, target)
+    robot_conf = BodyConf(robot)
 
     if path is not None and os.path.exists(path):
         with open(path, 'rb') as f:
             op_plan = pk.load(f)
     else:
         oBody = EXE_Object(pddl='o' + str(box_pose.body), value=box_pose.body)
+        oRobot = EXE_Object(pddl='o' + str(robot), value=robot)
         oBodyInfo = EXE_Object(pddl='o' + str(box_info), value=box_info)
-        # oRegion = EXE_Object(pddl='o' + str(table_pose.body), value=table_pose.value)
         oBodyPose = EXE_Object(pddl='pInit' + str(box_pose.body),
                                value=box_pose)  # p72        #TODO: value = joints ???
         oFloorID = EXE_Object(pddl='surface', value=1)
         oConf = EXE_Object(pddl='qInit', value=robot_conf)  # q800         #TODO: value = conf ???        conf von  plan-free-motion
-        # oArm = EXE_Object(pddl='', value=None)
 
         # open variables
         voG0 = EXE_OptimisticObject(pddl='#g0', repr_name='#g0', value=None)
@@ -211,13 +210,9 @@ def get_op_plan(scn, path=None):
         voQ0 = EXE_OptimisticObject(pddl='#q0', repr_name='#q0', value=None)
         voT1 = EXE_OptimisticObject(pddl='#t1', repr_name='#t1', value=None)
         voQ11 = EXE_OptimisticObject(pddl='#q11', repr_name='#q11', value=None)
-        # voT85 = EXE_OptimisticObject(pddl='#t85', repr_name='#t85', value=None)
-        # voT480 = EXE_OptimisticObject(pddl='#t480', repr_name='#t480', value=None)
         voT37 = EXE_OptimisticObject(pddl='#t37', repr_name='#t37', value=None)
-        # voT12 = EXE_OptimisticObject(pddl='#t12', repr_name='#t12', value=None)
-        voP2 = EXE_OptimisticObject(pddl='#p2', repr_name='#p2', value=None)
 
-        op_plan = [EXE_Stream(inputs=(oBody,),
+        op_plan = [EXE_Stream(inputs=(oBody, oBodyInfo, oRobot),
                               name='sample-grasp-direction',
                               outputs=(voG0,)), # grasp_dir
 
@@ -237,6 +232,7 @@ def get_op_plan(scn, path=None):
                               name='move-free-base',
                               parameters=(oConf, voQ0, voT37,)),
 
+
                    EXE_Stream(inputs=(oBody, oBodyPose, voG1,), # oArm
                               name='inverse-kinematics',
                               outputs=(voQ11, voT1,)),
@@ -245,44 +241,32 @@ def get_op_plan(scn, path=None):
                               name='move-free-arm',
                               parameters=(voQ0, voQ11, voT1,)),
 
-                   EXE_Action(add_effects=(pAtom(name='atgrasp', args=(oBody, voG0,)),),
+                   EXE_Action(add_effects=(pAtom(name='atbpose', args=(oBody, voG0,)),),
                               name='pick',
-                              parameters=(oBody, oBodyPose, voG0, voQ0, voT1,)),
+                              parameters=(oBody, oBodyPose, voG0, voQ0, voT1,)),""""""
                    ]
-
-    """ Ab hier kann erstmal ignoriert werden   """
-
-   #EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ0,)),),
-   #           name='move-free-base',
-   #           parameters=(oConf, voQ0, voT37,)),
-
-   #EXE_Stream(inputs=(oBody,),
-   #           name='plan-free-motion',
-   #           outputs=(voG0,)),
-   #EXE_Action(add_effects=(pAtom(name='atbconf', args=(voQ0,)),),
-   #           name='place',
-   #           parameters=(oConf, voQ0, voT37,)),
-   #EXE_Action(add_effects=(pAtom(name='atbconf', args=(oConf,)),),
-   #           name='move-free-base',
-   #           parameters=(voQ11, oConf, voT480,)),
 
     return op_plan
 
 
 
 #######################################################
-
 def main():
-    visualization = 1
+    # run()
+    print("CNN: ", True)
+    run(cnn=True)
+
+
+def run(nn=False, cnn=False):
+    visualization = 0
     connect(use_gui=visualization)
     scn = BuildWorldScenario()
     ## TODO Calculate GraspDirection
-
     """TODO: Here operators should be implemented"""
-    stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(), free_generator=True, discrete=True, p1=[0, 1, 2, 3, 4], p2=[.2, .2, .2, .2, .2]),
+    stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(cnn=cnn), free_generator=True, discrete=True, p1=[0, 1, 2, 3, 4], p2=[.2, .2, .2, .2, .2]),
                    'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn.robots[0], scn.dic_body_info),
                                               free_generator=False),
-                   'sample-base-position': StreamInfo(seed_gen_fn=sdg_sample_base_position(scn.all_bodies),
+                   'sample-base-position': StreamInfo(seed_gen_fn=sdg_sample_base_position(scn.all_bodies, nn=nn),
                                                       every_layer=15, free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),
                    'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn.robots[0], all_bodies=scn.all_bodies),
                                                     free_generator=False),
@@ -295,9 +279,8 @@ def main():
                    'pick': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
                    'place': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1))
                    }
-
-    op_plan = get_op_plan(scn)
-    print(op_plan)
+    st = time.time()
+    op_plan = get_op_plan(scn, scn.movable_bodies[5])
     e_root = ExtendedNode()
     assert op_plan is not None
 
@@ -306,18 +289,19 @@ def main():
                                get_update_env_reward_fn(scn, action_info),
                                stream_info, scn)
     selected_branch = PlannerUCT(skeleton_env)
-    
 
     concrete_plan = selected_branch.think(900, visualization)
-    print(concrete_plan)
-    """ 
+    # print(concrete_plan)
+
     if concrete_plan is None:
         print('TAMP is failed.', concrete_plan)
         disconnect()
         return
     thinking_time = time.time() - st
-    print('TAMP is successful. think_time: '.format(thinking_time))
-    
+    print('TAMP is successful. think_time: ', thinking_time)
+    time.sleep(0)
+    disconnect()
+    """
     exe_plan = None
     if concrete_plan is not None:
         exe_plan = []
@@ -330,19 +314,12 @@ def main():
     if exe_plan is None:
         disconnect()
         return
-    
-
-    #disconnect()
-    #connect(use_gui=True)
-    #BuildWorldScenario()
 
     with LockRenderer():
         commands = postprocess_plan(scn, exe_plan)
 
     play_commands(commands)
     """
-    #disconnect()
-
     print('Finished.')
 
 
