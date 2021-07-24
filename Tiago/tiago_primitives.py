@@ -99,6 +99,8 @@ class sdg_sample_grasp_dir(object):
 def cnn_method(body_id, box_info, robot):
     ellipsoid_frame, obj_extent, _, _, _ = get_ellipsoid_frame(body_id, box_info, robot)
     mat_image = get_raytest_scatter3(body_id, ellipsoid_frame, obj_extent, robot)
+    # plt.imshow(mat_image, 'gray', vmin=0, vmax=1)
+    # plt.show()
     dic = predict_grasp_direction(mat_image)
     if dic.get(2)[0] >= 50:
         return 2
