@@ -252,7 +252,7 @@ def get_op_plan(scn, target, path=None):
 
 #######################################################
 def main():
-    # run()
+    run()
     print("CNN: ", True)
     run(cnn=True)
 
@@ -279,8 +279,7 @@ def run(nn=False, cnn=False):
                    'pick': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
                    'place': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1))
                    }
-    st = time.time()
-    op_plan = get_op_plan(scn, scn.movable_bodies[5])
+    op_plan = get_op_plan(scn, scn.movable_bodies[0])
     e_root = ExtendedNode()
     assert op_plan is not None
 
@@ -290,6 +289,7 @@ def run(nn=False, cnn=False):
                                stream_info, scn)
     selected_branch = PlannerUCT(skeleton_env)
 
+    st = time.time()
     concrete_plan = selected_branch.think(900, visualization)
     # print(concrete_plan)
 

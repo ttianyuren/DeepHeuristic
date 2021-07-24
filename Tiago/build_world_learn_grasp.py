@@ -37,7 +37,7 @@ class BuildWorldScenario(object):
 
 
                 """ TIAGO ROBOT INIZIALIZATION """
-                startPosition = [0, -.8, 0]
+                startPosition = [0, -.8, 0.1]
                 startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
                 
                 self.tiago = load_pybullet("../Tiago/tiago_description/tiago.urdf",

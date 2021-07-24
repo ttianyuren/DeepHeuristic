@@ -100,15 +100,15 @@ def cnn_method(body_id, box_info, robot):
     ellipsoid_frame, obj_extent, _, _, _ = get_ellipsoid_frame(body_id, box_info, robot)
     mat_image = get_raytest_scatter3(body_id, ellipsoid_frame, obj_extent, robot)
     dic = predict_grasp_direction(mat_image)
-    if dic.get(2)[0]>50:
+    if dic.get(2)[0] >= 50:
         return 2
-    elif dic.get(0)[0]>50:
+    elif dic.get(0)[0] >= 50:
         return 0
-    elif dic.get(1)[0]>50:
+    elif dic.get(1)[0] >= 50:
         return 1
-    elif dic.get(4)[0]>50:
+    elif dic.get(4)[0] >= 50:
         return 4
-    elif dic.get(3)[0]>50:
+    elif dic.get(3)[0] >= 50:
         return 3
     return None
 
@@ -165,7 +165,7 @@ def getZRotation(robot, box_id):
 def target_reachable(grasp_pose, box_id, box_info, robot):
     ellipsoid_frame, obj_extent, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(box_id, box_info, robot)
 
-    return list_dist[0] <= 0.75
+    return list_dist[0] <= 0.8
 
 
 class sdg_sample_grasp(object):
