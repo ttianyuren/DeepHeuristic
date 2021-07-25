@@ -37,12 +37,12 @@ class BuildWorldScenario(object):
 
 
                 """ TIAGO ROBOT INIZIALIZATION """
-                startPosition = [0, -.8, 0.1]
+                startPosition = [0, -.8, 0.02]
                 startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
                 
                 self.tiago = load_pybullet("../Tiago/tiago_description/tiago.urdf",
                                             position=startPosition, 
-                                            fixed_base=True)
+                                            fixed_base=False)
 
                 self.setStartPositionAndOrienation(self.tiago, startPosition, startOrientation)
 
@@ -58,7 +58,13 @@ class BuildWorldScenario(object):
                 """ Load Boxes to Simulations """
                 mass = 1        #in kg
                 self.bd_body = {
-                    "box1": create_box(.07, .07, .1, mass=mass, color=(0, 1, 0, 1)),
+                    "box1": create_box(.07, .07, .1, mass=mass, color=(0, 0, 1, 1)),
+                    "box2": create_box(.07, .07, .1, mass=mass, color=(0, 1, 0, 1)),
+                    "box3": create_box(.07, .07, .1, mass=mass, color=(0, 1, 1, 1)),
+                    "box4": create_box(.07, .07, .1, mass=mass, color=(1, 0, 0, 1)),
+                    "box5": create_box(.07, .07, .1, mass=mass, color=(1, 0, 1, 1)),
+                    "box6": create_box(.07, .07, .1, mass=mass, color=(1, 1, 0, 1)),
+                    "box7": create_box(.07, .07, .1, mass=mass, color=(1, 1, 1, 1)),
                 }
 
                 self.bd_body.update(dict((self.bd_body[k], k) for k in self.bd_body))
@@ -66,16 +72,15 @@ class BuildWorldScenario(object):
 
                 enable_gravity()
 
-        self.movable_bodies = [self.bd_body['box1']]
+        self.movable_bodies = [self.bd_body['box1'], self.bd_body['box2'],
+                               self.bd_body['box3'], self.bd_body['box4'], self.bd_body['box5'],
+                               self.bd_body['box6'], self.bd_body['box7']]
         self.env_bodies = [self.floor]
         self.regions = [self.table]
 
         self.all_bodies = list(set(self.movable_bodies) | set(self.env_bodies) | set(self.regions))     #all ids in model/body [0, 1, 2, ...]
 
-        self.sensors = []
         self.robots = [self.tiago]
-
-        self.gripper = None
 
         self.dic_body_info = {}
 
@@ -102,8 +107,20 @@ class BuildWorldScenario(object):
 
 
     def setBoxPositionAndOrientation(self):
-        box1_pos = [0, .0, self.pos_table[2] + 0.2 / 2]#self.load_random_box_position()
+        box1_pos = [.1, .1, self.pos_table[2] + 0.2 / 2]   # self.load_random_box_position()
+        box2_pos = [.1, .0, self.pos_table[2] + 0.2 / 2]
+        box3_pos = [.1, -.1, self.pos_table[2] + 0.2 / 2]
+        box4_pos = [0, .0, self.pos_table[2] + 0.2 / 2]
+        box5_pos = [-.1, .1, self.pos_table[2] + 0.2 / 2]
+        box6_pos = [-.1, .0, self.pos_table[2] + 0.2 / 2]
+        box7_pos = [-.1, -.1, self.pos_table[2] + 0.2 / 2]
         self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
+        self.setStartPositionAndOrienation(self.bd_body['box2'], box2_pos, self.load_start_orientation())
+        self.setStartPositionAndOrienation(self.bd_body['box3'], box3_pos, self.load_start_orientation())
+        self.setStartPositionAndOrienation(self.bd_body['box4'], box4_pos, self.load_start_orientation())
+        self.setStartPositionAndOrienation(self.bd_body['box5'], box5_pos, self.load_start_orientation())
+        self.setStartPositionAndOrienation(self.bd_body['box6'], box6_pos, self.load_start_orientation())
+        self.setStartPositionAndOrienation(self.bd_body['box7'], box7_pos, self.load_start_orientation())
 
 
     def load_random_box_position(self):
