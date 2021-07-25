@@ -22,6 +22,7 @@ from utils.pybullet_tools.pr2_primitives import  Conf, get_ik_ir_gen, get_motion
     get_stable_gen, get_grasp_gen, Attach, Detach, Clean, Cook, control_commands, \
     get_gripper_joints, GripperCommand, apply_commands, State, Command
 
+from utils.pybullet_tools.body_utils import get_raytest_scatter3, get_ellipsoid_frame
 from utils.pybullet_tools.pr2_utils import get_arm_joints, ARM_NAMES,  get_group_joints, get_group_conf
 from utils.pybullet_tools.utils import WorldSaver, is_connected,step_simulation,  connect, get_pose, set_pose, get_configuration, is_placement, \
     disconnect, get_bodies, connect, get_pose, is_placement, point_from_pose, \
@@ -198,8 +199,6 @@ def get_op_plan(scn, target, path=None):
             op_plan = pk.load(f)
     else:
         # initial variables
-        oRobot = EXE_Object(pddl='o' + str(robot), value=robot)
-        oBodyInfo = EXE_Object(pddl='o' + str(box_info), value=box_info)
         oBody = EXE_Object(pddl='o' + str(box_pose.body), value=box_pose.body)
         oBodyPose = EXE_Object(pddl='pInit' + str(box_pose.body), value=box_pose)
         oFloorID = EXE_Object(pddl='surface', value=floor)
@@ -213,15 +212,15 @@ def get_op_plan(scn, target, path=None):
         voQ11 = EXE_OptimisticObject(pddl='#q11', repr_name='#q11', value=None)
         voT37 = EXE_OptimisticObject(pddl='#t37', repr_name='#t37', value=None)
 
-        op_plan = [EXE_Stream(inputs=(oBody, oBodyInfo, oRobot),
+        op_plan = [EXE_Stream(inputs=(oBody,),
                               name='sample-grasp-direction',
-                              outputs=(voG0,)), # grasp_dir
+                              outputs=(voG0,)),
 
                    EXE_Stream(inputs=(oBody, voG0),
                               name='sample-grasp',
-                              outputs=(voG1,)), # box_grasp
+                              outputs=(voG1,)),
 
-                   EXE_Stream(inputs=(voG1, oFloorID, oBodyInfo),
+                   EXE_Stream(inputs=(voG1, oFloorID, voG0),
                               name='sample-base-position',
                               outputs=(voQ0,)),
 
@@ -234,7 +233,7 @@ def get_op_plan(scn, target, path=None):
                               parameters=(oConf, voQ0, voT37,)),
 
 
-                   EXE_Stream(inputs=(oBody, oBodyPose, voG1,), # oArm
+                   EXE_Stream(inputs=(oBody, oBodyPose, voG1,),
                               name='inverse-kinematics',
                               outputs=(voQ11, voT1,)),
 
@@ -254,19 +253,24 @@ def get_op_plan(scn, target, path=None):
 #######################################################
 def main():
     run()
-    print("CNN: ", True)
-    run(cnn=True)
+    print("NN: ", True)
+    run(nn=True)
 
 
-def run(nn=False, cnn=False):
+def run(cnn=True, nn=False, target=0):
     visualization = 1
     connect(use_gui=visualization)
     scn = BuildWorldScenario()
+    robot = scn.robots[0]
+    target = scn.movable_bodies[target]
+    target_info = scn.dic_body_info[target]
+    ellipsoid_frame, obj_extent, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(target, target_info, robot)
+    mat_image = get_raytest_scatter3(target, ellipsoid_frame, obj_extent, robot)
     """TODO: Here operators should be implemented"""
-    stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(cnn=cnn), free_generator=True, discrete=True, p1=[0, 1, 2, 3, 4], p2=[.2, .2, .2, .2, .2]),
-                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(scn.robots[0], scn.dic_body_info),
+    stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(cnn=cnn, img=mat_image), free_generator=True, discrete=True, p1=[0, 1, 2, 3, 4], p2=[.2, .2, .2, .2, .2]),
+                   'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(robot, target_info),
                                               free_generator=False),
-                   'sample-base-position': StreamInfo(seed_gen_fn=sdg_sample_base_position(scn.all_bodies, nn=nn),
+                   'sample-base-position': StreamInfo(seed_gen_fn=sdg_sample_base_position(scn.all_bodies, nn, list_dist, list_dir_jj, list_z_jj),
                                                       every_layer=15, free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),
                    'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn.robots[0], all_bodies=scn.all_bodies),
                                                     free_generator=False),
@@ -279,7 +283,7 @@ def run(nn=False, cnn=False):
                    'pick': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1)),
                    'place': ActionInfo(optms_cost_fn=get_const_cost_fn(1), cost_fn=get_const_cost_fn(1))
                    }
-    op_plan = get_op_plan(scn, scn.movable_bodies[0])
+    op_plan = get_op_plan(scn, target)
     e_root = ExtendedNode()
     assert op_plan is not None
 
@@ -290,6 +294,7 @@ def run(nn=False, cnn=False):
     selected_branch = PlannerUCT(skeleton_env)
 
     st = time.time()
+
     concrete_plan = selected_branch.think(900, visualization)
 
     thinking_time = time.time() - st
