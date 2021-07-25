@@ -127,9 +127,11 @@ class sdg_sample_base_position(object):
         grasp_dir = grasp_dir.direction
         robot = box_grasp.robot
         box_id = box_grasp.body
+        if is_reachable(self.nn, self.dist[grasp_dir], self.dir[grasp_dir], self.z[grasp_dir]):
+            body_conf = BodyConf(robot)
+            return (body_conf, )
+
         obstacles = list(set(self.all_bodies) - {robot, surface})
-        # body_conf = BodyConf(robot)
-        # return (body_conf, )
         while num_of_attempts > 0:
             num_of_attempts -= 1
             """1) Generation"""
