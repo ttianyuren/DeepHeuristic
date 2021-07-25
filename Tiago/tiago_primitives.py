@@ -7,7 +7,7 @@ import time
 from itertools import islice
 import matplotlib.pyplot as plt
 import numpy as np
-from load_model import predict_grasp_direction
+from load_model import predict_grasp_direction, predict_reachability
 from utils.pybullet_tools.body_utils import *
 
 #from ikfast.pr2.ik import is_ik_compiled, pr2_inverse_kinematics
@@ -80,14 +80,15 @@ class BodyGrasp(object):
 
 
 class sdg_sample_grasp_dir(object):
-    def __init__(self, cnn=True):
+    def __init__(self, cnn=True, img=None):
         self.cnn = cnn
+        self.img = img
 
     def __call__(self, input_tuple, seed=None):
-        body, body_info, robot = input_tuple # the target body (aka the box)
+        body, = input_tuple # the target body (aka the box)
         list_available = [0, 1, 2, 3, 4]
         if self.cnn:
-            direction = cnn_method(body, body_info.info, 2)
+            direction = cnn_method(self.img)
         elif seed is None:
             direction = list_available[random.sample(list_available, 1)[0]]
         else:
@@ -96,9 +97,7 @@ class sdg_sample_grasp_dir(object):
         return (GraspDirection(body, direction),)
 
 
-def cnn_method(body_id, box_info, robot):
-    ellipsoid_frame, obj_extent, _, _, _ = get_ellipsoid_frame(body_id, box_info, robot)
-    mat_image = get_raytest_scatter3(body_id, ellipsoid_frame, obj_extent, robot)
+def cnn_method(mat_image):
     # plt.imshow(mat_image, 'gray', vmin=0, vmax=1)
     # plt.show()
     dic = predict_grasp_direction(mat_image)
@@ -116,37 +115,33 @@ def cnn_method(body_id, box_info, robot):
 
 
 class sdg_sample_base_position(object):
-    def __init__(self, all_bodies=[], nn=False):
-        self.nn = nn
+    def __init__(self, all_bodies=[], nn=False, dist=None, dir=None, z=None):
         self.all_bodies = all_bodies
+        self.nn = nn
+        self.dist = dist
+        self.dir = dir
+        self.z = z
 
     def __call__(self, input_tuple, num_of_attempts=100, seed=None):
-        # startPosition = [0, -.8, 0]
-        # startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
-
-        # p.resetBasePositionAndOrientation(2, startPosition, startOrientation)
-
-        # body_conf = BodyConf(2)
-        # return (body_conf,)
-        box_grasp, surface, box_info = input_tuple
-        box_info = box_info.info
+        box_grasp, surface, grasp_dir = input_tuple
+        grasp_dir = grasp_dir.direction
         robot = box_grasp.robot
         box_id = box_grasp.body
         obstacles = list(set(self.all_bodies) - {robot, surface})
+        # body_conf = BodyConf(robot)
+        # return (body_conf, )
         while num_of_attempts > 0:
             num_of_attempts -= 1
             """1) Generation"""
-            #pose1 = sample_placement_seed(robot, surface, seed)
+            pose1 = sample_placement_seed(robot, surface, seed)
             """2) Validation"""
-            #if (pose1 is None) or any(pairwise_collision(robot, b) for b in obstacles):
-            #    continue
-            # pose = setOrientationToObject(pose1, robot, box_id)
-            if not target_reachable(box_grasp.grasp_pose[0], box_id, box_info, robot):
+            if (pose1 is None) or any(pairwise_collision(robot, b) for b in obstacles):
+                continue
+            pose = setOrientationToObject(pose1, robot, box_id)
+            if not is_reachable(self.nn, self.dist[grasp_dir], self.dir[grasp_dir], self.z[grasp_dir]):
                 continue
             body_conf = BodyConf(robot)
             return (body_conf, )
-            # body_pose = BodyPose(robot, pose)
-            # return (body_pose,)  # return a tuple
         return None
 
 
@@ -164,10 +159,11 @@ def getZRotation(robot, box_id):
     rad = math.atan2(target_pose[1], target_pose[0])
     return (rad + 2 * np.pi) % (2*np.pi)
 
-def target_reachable(grasp_pose, box_id, box_info, robot):
-    ellipsoid_frame, obj_extent, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(box_id, box_info, robot)
-
-    return list_dist[0] <= 0.8
+def is_reachable(nn, dist, dir, z):
+    if nn:
+        return predict_reachability(dist, dir, z)
+    else:
+        return dist <= 0.8
 
 
 class sdg_sample_grasp(object):
@@ -183,9 +179,7 @@ class sdg_sample_grasp(object):
         assert body == grasp_dir.body
         grasp_dir = grasp_dir.direction
 
-        body_info = self.dic_body_info[body]
-
-        ellipsoid_frame, obj_extent, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(body, body_info,
+        ellipsoid_frame, obj_extent, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(body, self.dic_body_info,
                                                                                              self.robot)
         ex, ey, ez = obj_extent
         # mat_image = get_raytest_scatter3(body, ellipsoid_frame, obj_extent, 2)
