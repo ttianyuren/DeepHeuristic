@@ -133,7 +133,7 @@ class sdg_sample_base_position(object):
         while num_of_attempts > 0:
             num_of_attempts -= 1
             """1) Generation"""
-            pose1 = sample_placement_seed(robot, surface, seed)
+            pose1 = sample_placement(robot, surface)
             """2) Validation"""
             if (pose1 is None) or any(pairwise_collision(robot, b) for b in obstacles):
                 continue
@@ -152,12 +152,14 @@ def setOrientationToObject(pose, robot, box_id):
     set_pose(robot, new_pose)
     return new_pose
 
+
 def getZRotation(robot, box_id):
     robot_pose = np.array(get_pose(robot)[0])
     box_pose = np.array(get_pose(box_id)[0])
     target_pose = box_pose - robot_pose
     rad = math.atan2(target_pose[1], target_pose[0])
     return (rad + 2 * np.pi) % (2*np.pi)
+
 
 def is_reachable(nn, dist, dir, z):
     if nn:
