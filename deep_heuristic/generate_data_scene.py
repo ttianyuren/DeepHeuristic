@@ -126,7 +126,7 @@ class PlanningScenario(object):
 
 
 def gather_training_data():
-    visualization = 1
+    visualization = 0
     connect(use_gui=visualization)
 
     scn = PlanningScenario()
@@ -159,7 +159,7 @@ def gather_training_data():
                 draw_shouldercenter_frame(robot, 3)
                 draw_frame(ellipsoid_frame, 3)
 
-            direction = 2
+            direction = 0
             for dist, fdir_jj, z_jj in zip(list_dist, list_dir_jj, list_z_jj):
                 if dist > 1:
                     tdata_workspace.append(
@@ -171,9 +171,8 @@ def gather_training_data():
                 grasp = f_sample_grasp.search((body, grasp_dir))[0]
                 approach_conf, command, q_approach, q_grasp = f_ik_grasp.search((body, body_pose, grasp))
                 label = q_grasp is not None  # if the object is reachable
-                print(dist, fdir_jj, z_jj, label)
                 tdata_workspace.append(((dist, fdir_jj, z_jj), label))
-                direction += 0
+                direction += 1
 
         with open(file_reach, 'wb') as f:
             pk.dump(tdata_workspace, f)
