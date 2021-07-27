@@ -367,8 +367,8 @@ def get_ellipsoid_frame(target_body, body_info, robot, pose=None):
     list_ext = [obj_extent[0], obj_extent[1], obj_extent[2], obj_extent[0], obj_extent[1]]
     list_face_dir = [x_axis, y_axis, z_axis, -x_axis, -y_axis]
     list_dist = []
-    list_dir_jj = []  # angle between the grasping direction and the line connecting surface center with robot base
-    list_z_jj = []  # angle between the Z axis of robot base and the line connecting robot base  with surface center
+    list_dir_jj = []  # angle between the grasping direction and the line connecting robot base with surface center
+    list_z_jj = []  # angle between the Z axis of robot base and the line connecting robot base with surface center
     for f_dir, ext in zip(list_face_dir, list_ext):
         v_tr = tr_vector - f_dir * ext * 0.5
         dist = np.linalg.norm(v_tr)
