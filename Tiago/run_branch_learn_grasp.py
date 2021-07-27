@@ -13,7 +13,6 @@ from etamp.actions import ActionInfo
 from etamp.stream import StreamInfo
 
 
-from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf, get_joints_from_body, Tiago_limits
 
 from Tiago.tiago_primitives import BodyPose, sdg_sample_place, sdg_sample_grasp, sdg_ik_grasp, sdg_motion_base_joint,\
     GraspDirection, sdg_plan_free_motion, sdg_sample_grasp_dir, sdg_sample_base_position, BodyConf, BodyInfo
@@ -232,7 +231,6 @@ def get_op_plan(scn, target, path=None):
                               name='move-free-base',
                               parameters=(oConf, voQ0, voT37,)),
 
-
                    EXE_Stream(inputs=(oBody, oBodyPose, voG1,),
                               name='inverse-kinematics',
                               outputs=(voQ11, voT1,)),
@@ -252,25 +250,37 @@ def get_op_plan(scn, target, path=None):
 
 #######################################################
 def main():
-    run()
-    print("NN: ", True)
-    run(nn=True)
+
+    waiting_time = 10
+    st = time.time()
+
+    for _ in range(300):
+        run(wait=waiting_time)
+
+    thinking_time = time.time() - st - waiting_time
+    print("CNN: ", False, ", thinking:", thinking_time)
+
+    st = time.time()
+
+    for _ in range(300):
+        run(cnn=True, wait=waiting_time)
+
+    thinking_time = time.time() - st - waiting_time
+    print("CNN: ", True, ", thinking:", thinking_time)
 
 
-def run(cnn=True, nn=False, target=0):
+def run(cnn=False, nn=False, target=3, wait=0):
     visualization = 1
     connect(use_gui=visualization)
     scn = BuildWorldScenario()
     robot = scn.robots[0]
     target = scn.movable_bodies[target]
     target_info = scn.dic_body_info[target]
-    ellipsoid_frame, obj_extent, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(target, target_info, robot)
-    mat_image = get_raytest_scatter3(target, ellipsoid_frame, obj_extent, robot)
-    """TODO: Here operators should be implemented"""
-    stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(cnn=cnn, img=mat_image), free_generator=True, discrete=True, p1=[0, 1, 2, 3, 4], p2=[.2, .2, .2, .2, .2]),
+
+    stream_info = {'sample-grasp-direction': StreamInfo(seed_gen_fn=sdg_sample_grasp_dir(cnn=cnn, target=target, target_info=target_info, robot=robot), free_generator=True, discrete=True, p1=[0, 1, 2, 3, 4], p2=[.2, .2, .2, .2, .2]),
                    'sample-grasp': StreamInfo(seed_gen_fn=sdg_sample_grasp(robot, target_info),
                                               free_generator=False),
-                   'sample-base-position': StreamInfo(seed_gen_fn=sdg_sample_base_position(scn.all_bodies, nn, list_dist, list_dir_jj, list_z_jj),
+                   'sample-base-position': StreamInfo(seed_gen_fn=sdg_sample_base_position(scn.all_bodies, nn, target, target_info),
                                                       every_layer=15, free_generator=True, discrete=False, p1=[1, 1, 1], p2=[.2, .2, .2]),
                    'inverse-kinematics': StreamInfo(seed_gen_fn=sdg_ik_grasp(scn.robots[0], all_bodies=scn.all_bodies),
                                                     free_generator=False),
@@ -305,7 +315,7 @@ def run(cnn=True, nn=False, target=0):
         return
 
     print('TAMP is successful. think_time: ', thinking_time)
-    time.sleep(0)
+    time.sleep(wait)
     disconnect()
     """
     exe_plan = None
