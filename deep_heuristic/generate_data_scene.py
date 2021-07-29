@@ -163,7 +163,7 @@ def gather_training_data():
             for dist, fdir_jj, z_jj in zip(list_dist, list_dir_jj, list_z_jj):
                 if dist > 1:
                     tdata_workspace.append(
-                        ((dist, fdir_jj, z_jj),
+                        ((direction, dist, fdir_jj, z_jj),
                          False))
                     direction += 1
                     continue
@@ -171,7 +171,7 @@ def gather_training_data():
                 grasp = f_sample_grasp.search((body, grasp_dir))[0]
                 approach_conf, command, q_approach, q_grasp = f_ik_grasp.search((body, body_pose, grasp))
                 label = q_grasp is not None  # if the object is reachable
-                tdata_workspace.append(((dist, fdir_jj, z_jj), label))
+                tdata_workspace.append(((direction, dist, fdir_jj, z_jj), label))
                 direction += 1
 
         with open(file_reach, 'wb') as f:
