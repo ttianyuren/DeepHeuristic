@@ -31,7 +31,8 @@ class BuildWorldScenario(object):
 
                 """ Load Table in the simulation"""
                 self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
-
+                self.table2 = load_model('models/small_table_collision/table.urdf', fixed_base=True)
+                self.setStartPositionAndOrienation(self.table2, [0, 0, self.pos_table[2] + 0.02], p.getQuaternionFromEuler([0, 0, 0]))
                 """ Load floor to simulation """
                 self.floor = load_model('models/short_floor.urdf', fixed_base=True)
 
