@@ -20,8 +20,8 @@ from utils.pybullet_tools.utils import LockRenderer, enable_gravity, step_simula
 from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf
 
 
-class BuildWorldScenario(object):
-	def __init__(self, path=None):
+class BuildWorldScenarioTable(object):
+	def __init__(self, path=None, fixed_object=False):
 		with HideOutput():
 			with LockRenderer():
 				# table = (länge = 1.5, breite = 1)
@@ -47,7 +47,6 @@ class BuildWorldScenario(object):
 				self.setStartPositionAndOrienation(self.tiago, startPosition, startOrientation)
 
 				initial_conf = get_initial_conf()
-
 				# Configure Arm Position and Torso Position in the beginning of the simulation
 				set_group_conf(self.tiago, 'arm', initial_conf)
 				close_arm(self.tiago)
@@ -57,15 +56,27 @@ class BuildWorldScenario(object):
 
 				""" Load Boxes to Simulations """
 				mass = 1  # in kg
-				self.bd_body = {
-					"box1": create_box(.07, .07, .1, mass=mass, color=(0, 0, 1, 1)),
-					"box2": create_box(.07, .07, .1, mass=mass, color=(0, 1, 0, 1)),
-					"box3": create_box(.07, .07, .1, mass=mass, color=(0, 1, 1, 1)),
-					"box4": create_box(.07, .07, .1, mass=mass, color=(1, 0, 0, 1)),
-					"box5": create_box(.07, .07, .1, mass=mass, color=(1, 0, 1, 1)),
-					"box6": create_box(.07, .07, .1, mass=mass, color=(1, 1, 0, 1)),
-					"box7": create_box(.07, .07, .1, mass=mass, color=(1, 1, 1, 1)),
-				}
+
+				if path is not None:
+					num_lines = sum(1 for line in open(path)) - 1
+					random_config = np.random.randint(0, num_lines)
+
+					self.bd_body = { }
+					with open(path) as file:
+						for idx, line in enumerate(file):
+							if idx == random_config:
+								color, position, orientation = transform2list(list(line.rstrip('\n').split(" ")))
+								for i, (c, pos, ori) in enumerate(zip(color, position, orientation)):
+									self.bd_body["box" + str(i + 1)] = create_box(.07, .07, .1, mass=mass, color=c)
+									self.setStartPositionAndOrienation(self.bd_body["box" + str(i + 1)], list(pos),
+																	   p.getQuaternionFromEuler(ori))
+
+				else:
+					import Tiago.Enviroments.generator as gen
+					#gen.random_generator('table_enviroment_hm.txt', self.static_object)
+					gen.random_generator2('table_enviroment_em.txt')
+
+
 
 				self.bd_body.update(dict((self.bd_body[k], k) for k in self.bd_body))
 				self.setBoxPositionAndOrientation()
@@ -167,6 +178,7 @@ class BuildWorldScenario(object):
 		"""
 		p.resetBasePositionAndOrientation(id, position, orientation)
 
+
 	def reset(self):
 		with HideOutput():
 			# initial_jts = np.array([-0.3, -0.9, -1, -1.5, 0, 0, 0])
@@ -192,10 +204,27 @@ class BuildWorldScenario(object):
 		pass
 
 
+def transform2list(input_string):
+	num_bodies = int(input_string[0])
+
+	c = list(map(float, input_string[1:4 * num_bodies + 1]))
+	p = list(map(float, input_string[4 * num_bodies + 1:4 * num_bodies + 3 * num_bodies + 1]))
+	o = list(map(float, input_string[4 * num_bodies + 3 * num_bodies + 1:]))
+
+	colors, positions, orientations = [], [], []
+	for i in range(num_bodies):
+		colors.append(tuple(c[i * 4:i * 4 + 4]))
+		positions.append(tuple(p[i * 3:i * 3 + 3]))
+		orientations.append(tuple(o[i * 3:i * 3 + 3]))
+
+	return colors, positions, orientations
+
+
+
 def display_scenario():
 	connect(use_gui=True)
 
-	scn = BuildWorldScenario()
+	scn = BuildWorldScenarioTable(None, False)
 	scn.get_elements()
 
 	for i in range(10000):
@@ -204,3 +233,5 @@ def display_scenario():
 
 	disconnect()
 	print('Finished.')
+
+display_scenario()
