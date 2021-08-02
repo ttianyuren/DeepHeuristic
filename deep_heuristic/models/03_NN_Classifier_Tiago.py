@@ -1,3 +1,5 @@
+from shlex import shlex
+
 from deep_heuristic.nn_utils import split_data, load_workspace, binary_acc, TrainData, TestData
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,13 +14,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
 
 EPOCHS = 100
-BATCH_SIZE = 60
-LEARNING_RATE = 0.001
+BATCH_SIZE = 100
+LEARNING_RATE = 0.0005
 
 ################################################## Data Preprocessing ##################################################
 
 train_data, train_labels, eval_data, eval_labels = split_data(
-    load_workspace(file_reach="../reach_tiago.pk"), test_size=0.1, num_of_param=4)
+    load_workspace(file_reach="../training_data/reach_tiago.pk"), test_size=0., num_of_param=4, shuffle=True)
+
+INPUTS = len(train_data[0])
 
 scaler = StandardScaler()
 X_train = scaler.fit_transform(train_data)
@@ -42,16 +46,16 @@ class BinaryClassification(nn.Module):
     def __init__(self):
         super(BinaryClassification, self).__init__()
         # Number of input features is 12.
-        self.layer_1 = nn.Linear(4, 16)
-        self.layer_2 = nn.Linear(16, 8)
-        self.layer_3 = nn.Linear(8, 4)
-        self.layer_out = nn.Linear(4, 1)
+        self.layer_1 = nn.Linear(INPUTS, 12)
+        self.layer_2 = nn.Linear(12, 8)
+        self.layer_3 = nn.Linear(8, 3)
+        self.layer_out = nn.Linear(3, 1)
 
         self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(p=0.2)
-        self.batchnorm1 = nn.BatchNorm1d(16)
+        self.dropout = nn.Dropout(p=.2)
+        self.batchnorm1 = nn.BatchNorm1d(12)
         self.batchnorm2 = nn.BatchNorm1d(8)
-        self.batchnorm3 = nn.BatchNorm1d(4)
+        self.batchnorm3 = nn.BatchNorm1d(3)
 
     def forward(self, inputs):
         x = self.relu(self.layer_1(inputs))
