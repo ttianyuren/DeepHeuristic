@@ -81,12 +81,35 @@ class sdg_sample_grasp_dir(object):
         self.cnn = cnn
         ellipsoid_frame, obj_extent, _, _, _ = get_ellipsoid_frame(target, target_info, robot)
         self.mat_image = get_raytest_scatter3(target, ellipsoid_frame, obj_extent, robot)
+        if cnn is None:
+            figure, ax = plt.subplots(1)
+            import matplotlib.patches as patches
+            rect = patches.Rectangle((0, 16), 8, 32, edgecolor='b', facecolor="none", lw=5)
+            rect1 = patches.Rectangle((16, 0), 32, 8, edgecolor='b', facecolor="none", lw=5)
+            rect2 = patches.Rectangle((58, 16), 8, 32, edgecolor='b', facecolor="none", lw=5)
+            rect3 = patches.Rectangle((16, 58), 32, 8, edgecolor='b', facecolor="none", lw=5)
+            rect4 = patches.Rectangle((16, 16), 32, 32, edgecolor='b', facecolor="none", lw=5)
+            ax.add_patch(rect)
+            ax.add_patch(rect1)
+            ax.add_patch(rect2)
+            ax.add_patch(rect3)
+            ax.add_patch(rect4)
+            plt.imshow(self.mat_image, 'gray')
+            plt.savefig("img" + str(np.random.randint(0, 100)))
+            plt.show()
+            time.sleep(100)
 
     def __call__(self, input_tuple, seed=None):
         body, = input_tuple # the target body (aka the box)
         list_available = [0, 1, 2, 3, 4]
         if self.cnn:
-            direction = cnn_method(self.mat_image)
+            i = 0
+            while i < 10:
+                i += 1
+                direction = cnn_method(self.mat_image)
+                print(direction)
+                if direction is not None:
+                    break
         elif seed is None:
             direction = list_available[random.sample(list_available, 1)[0]]
         else:
@@ -99,7 +122,8 @@ def cnn_method(mat_image):
     # plt.imshow(mat_image, 'gray', vmin=0, vmax=1)
     # plt.show()
     dic = predict_grasp_direction(mat_image)
-    if dic.get(2)[0] >= 50:
+    print(dic)
+    if dic.get(2)[0] >= 90:
         return 2
     elif dic.get(0)[0] >= 50:
         return 0
