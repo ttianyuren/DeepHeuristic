@@ -19,17 +19,26 @@ def binary_acc(y_predicted, y_test):
     return torch.round(correct_results_sum / y_test.shape[0] * 100)
 
 
-def split_data(raw_data, test_size=0.1, num_of_param=1, shuffle=False):
+def split_data(raw_data, test_size=0.1, num_of_param=1, shuffle=False, exclude_feature=None):
     raw_data = np.array(raw_data)
     if shuffle:
         np.random.shuffle(raw_data)
     data = np.array([list(x) for x in raw_data[:, 0]])
     data = np.reshape(data, (-1, num_of_param))
+
+    if exclude_feature is not None:
+        data = np.delete(data, exclude_feature, 1)
+        num_of_param -= 1
     train_length = int(len(data) * (1 - test_size))
     train_data_in = data[:train_length]
     train_labels_in = raw_data[:train_length, 1]
-    eval_data_in = data[train_length:]
-    eval_labels_in = raw_data[train_length:, 1]
+    if test_size == 0:
+        eval_data_in = data
+        eval_labels_in = raw_data[:, 1]
+    else:
+        eval_data_in = data[train_length:]
+        eval_labels_in = raw_data[train_length:, 1]
+
     return np.array(train_data_in).reshape(-1, num_of_param), np.array(train_labels_in, dtype=float), \
         np.array(eval_data_in).reshape(-1, num_of_param), np.array(eval_labels_in, dtype=float)
 
