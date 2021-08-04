@@ -5,9 +5,7 @@ from utils.pybullet_tools.utils import create_box, body_collision, get_joint_pos
 
 def random_generator(path, static_objects):
 	rand_obj = np.random.randint(5, 10)
-	colors = [(0, 0, 1, 1), (0, 1, 0, 1), (0, 1, 1, 1),
-			  (1, 0, 0, 1), (1, 0, 1, 1), (1, 1, 0, 1),
-			  (1, 1, 1, 1), (0, 0.7, 0.7, 1), (0.7, 0, 0.7, 1), (0.8, 0, 0.6, 1)]
+	colors = [(1, 0, 0, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1)]
 
 	bd_body = {}
 	for i in range(rand_obj):
@@ -28,15 +26,19 @@ def random_generator(path, static_objects):
 		for k in static_objects:
 			obj = static_objects[k]
 			while body_collision(obj, bd_body["box" + str(i + 1)]) != 0:
-				pos[2]= 1.1
+				if k == 'table':
+					pos = load_random_box_position()
+					ori = load_random_orientation()
+				else:
+					pos[2]= pos[2] + 0.01
 				p.resetBasePositionAndOrientation(bd_body["box" + str(i + 1)], pos, ori)
 
 	in_save = input("Konfiguration speichern? (y, n)")
 
 	if in_save == 'y':
 		input_file = [rand_obj]
-		for c in colors:
-			input_file = input_file + list(c)
+		for i in range(rand_obj):
+			input_file = input_file + list(colors[i])
 
 		positions, orientations= (), ()
 		for k in bd_body:
@@ -55,9 +57,7 @@ def random_generator(path, static_objects):
 
 def random_generator2(path):
 	rand_obj = np.random.randint(5, 10)
-	colors = [(0, 0, 1, 1), (0, 1, 0, 1), (0, 1, 1, 1),
-			  (1, 0, 0, 1), (1, 0, 1, 1), (1, 1, 0, 1),
-			  (1, 1, 1, 1), (0, 0.7, 0.7, 1), (0.7, 0, 0.7, 1), (0.8, 0, 0.6, 1)]
+	colors = [(1, 0, 0, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1), (0, 0, 1, 1)]
 
 	bd_body = {}
 	for i in range(rand_obj):
@@ -80,8 +80,8 @@ def random_generator2(path):
 
 	if in_save == 'y':
 		input_file = [rand_obj]
-		for c in colors:
-			input_file = input_file + list(c)
+		for i in range(rand_obj):
+			input_file = input_file + list(colors[i])		#
 
 		positions, orientations= (), ()
 		for k in bd_body:

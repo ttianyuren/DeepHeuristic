@@ -6,6 +6,8 @@ import numpy as np
 import time
 from numpy.core.fromnumeric import size
 import pybullet as p
+import csv
+import pickle
 
 from copy import copy
 
@@ -18,20 +20,17 @@ from utils.pybullet_tools.utils import LockRenderer, enable_gravity, step_simula
 	LockRenderer, load_model, set_point, get_pose, get_link_name, set_collision_group_mask
 
 from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_conf
+import  json
 
-
-class BuildWorldScenarioTable(object):
+class BuildWorldScenarioWalls(object):
 	def __init__(self, path=None, fixed_object=False):
 		with HideOutput():
 			with LockRenderer():
-				# table = (länge = 1.5, breite = 1)
 				self.pos_table = [0, 0, 0.58]
 				self.table_config = [1.5, 1, 0.58]
 
 				""" Load Table in the simulation"""
 				self.table = load_model('models/table_collision/table.urdf', fixed_base=True)
-				self.top_table = load_model('models/small_table_collision/table.urdf', fixed_base=True)
-				self.setStartPositionAndOrienation(self.top_table, [0, 0, self.pos_table[2] + 0.02], p.getQuaternionFromEuler([0, 0, 0]))
 
 				""" Load floor to simulation """
 				self.floor = load_model('models/short_floor.urdf', fixed_base=True)
@@ -47,48 +46,69 @@ class BuildWorldScenarioTable(object):
 				self.setStartPositionAndOrienation(self.tiago, startPosition, startOrientation)
 
 				initial_conf = get_initial_conf()
+
 				# Configure Arm Position and Torso Position in the beginning of the simulation
 				set_group_conf(self.tiago, 'arm', initial_conf)
 				close_arm(self.tiago)
 				open_arm(self.tiago)
 				set_group_conf(self.tiago, 'torso', [0.20])
 
-
-				""" Load Boxes to Simulations """
 				mass = 1  # in kg
+
+
+				self.walls = {
+					"wall1": create_box(1.54, 0.25, 1.5, mass=10, color=(0.5, 0.5, 0.5, 1)),
+					"wall2": create_box(1.04, 0.25, 1.5, mass=10, color=(0.5, 0.5, 0.5, 1))
+				}
+
+				positions = [(0, 0.645, 0.75), (-0.895, 0, 0.78)]
+				orientations = [(0, 0, 0), (0, 0, np.pi / 2)]
+
+				for body, pos, ori in zip(self.walls, positions, orientations):
+					self.setStartPositionAndOrienation(self.walls[body], pos,
+													   self.load_start_orientation(ori))
+				self.static_object = {}
+				if fixed_object == True:
+					self.static_object = {
+						"box1": create_box(.15, .15, .15, mass=2, color=(0.5, 0.5, 0.5, 1)),
+						"box2": create_box(.2, .2, .2, mass=3, color=(0.5, 0.5, 0.5, 1)),
+						"box3": create_box(.3, .3, .3, mass=5, color=(0.5, 0.5, 0.5, 1))
+					}
+					self.setBoxPositionAndOrientation()
 
 				if path is not None:
 					num_lines = sum(1 for line in open(path)) - 1
 					random_config = np.random.randint(0, num_lines)
 
-					self.bd_body = { }
+					self.bd_body = {}
 					with open(path) as file:
 						for idx, line in enumerate(file):
 							if idx == random_config:
 								color, position, orientation = transform2list(list(line.rstrip('\n').split(" ")))
 								for i, (c, pos, ori) in enumerate(zip(color, position, orientation)):
 									self.bd_body["box" + str(i + 1)] = create_box(.07, .07, .1, mass=mass, color=c)
-									self.setStartPositionAndOrienation(self.bd_body["box" + str(i + 1)], list(pos),
-																	   p.getQuaternionFromEuler(ori))
+									self.setStartPositionAndOrienation(self.bd_body["box" + str(i + 1)], list(pos), p.getQuaternionFromEuler(ori))
 
 				else:
-					import Tiago.Enviroments.generator as gen
-					#gen.random_generator('table_enviroment_hm.txt', self.static_object)
-					gen.random_generator2('table_enviroment_em.txt')
+					import Tiago.Environment.generator as gen
+					self.static_object['underground'] = self.table
+					#gen.random_generator('Environment/walls_environment_em.txt', self.static_object)
+					gen.random_generator('Environment/walls_environment_hm.txt', self.static_object)
 
-
-
+				if fixed_object == True:
+					self.static_object.update(dict((self.static_object[k], k) for k in self.static_object))
 				self.bd_body.update(dict((self.bd_body[k], k) for k in self.bd_body))
-				self.setBoxPositionAndOrientation()
+				self.walls.update(dict((self.walls[k], k) for k in self.walls))
 
 				enable_gravity()
 
-		self.movable_bodies = [self.bd_body['box1'], self.bd_body['box2'],
-							   self.bd_body['box3'], self.bd_body['box4'], self.bd_body['box5'],
-							   self.bd_body['box6'], self.bd_body['box7']]
+		self.movable_bodies = [self.bd_body[k] for k in self.bd_body]
+		if fixed_object == True:
+			self.env_bodies = [self.floor] + [self.static_object[k] for k in self.static_object] + [self.walls[k] for k in self.walls]
+		else:
+			self.env_bodies = [self.floor] +  [self.walls[k] for k in self.walls]
 
-		self.env_bodies = [self.floor]
-		self.regions = [self.table, self.top_table]
+		self.regions = [self.table]
 
 		self.all_bodies = list(
 			set(self.movable_bodies) | set(self.env_bodies) | set(self.regions))  # all ids in model/body [0, 1, 2, ...]
@@ -120,20 +140,12 @@ class BuildWorldScenarioTable(object):
 
 
 	def setBoxPositionAndOrientation(self):
-		box1_pos = [.1, .1, self.pos_table[2] + 0.2 / 2]  # self.load_random_box_position()
-		box2_pos = [.1, .0, self.pos_table[2] + 0.2 / 2]
-		box3_pos = [.1, -.1, self.pos_table[2] + 0.2 / 2]
-		box4_pos = [0, .0, self.pos_table[2] + 0.2 / 2]
-		box5_pos = [-.1, .1, self.pos_table[2] + 0.2 / 2]
-		box6_pos = [-.1, .0, self.pos_table[2] + 0.2 / 2]
-		box7_pos = [-.1, -.1, self.pos_table[2] + 0.2 / 2]
-		self.setStartPositionAndOrienation(self.bd_body['box1'], box1_pos, self.load_start_orientation())
-		self.setStartPositionAndOrienation(self.bd_body['box2'], box2_pos, self.load_start_orientation())
-		self.setStartPositionAndOrienation(self.bd_body['box3'], box3_pos, self.load_start_orientation())
-		self.setStartPositionAndOrienation(self.bd_body['box4'], box4_pos, self.load_start_orientation())
-		self.setStartPositionAndOrienation(self.bd_body['box5'], box5_pos, self.load_start_orientation())
-		self.setStartPositionAndOrienation(self.bd_body['box6'], box6_pos, self.load_start_orientation())
-		self.setStartPositionAndOrienation(self.bd_body['box7'], box7_pos, self.load_start_orientation())
+		positions = [(0.4, 0.3, self.pos_table[2] + 0.2 / 2), (0.4, -0.2, self.pos_table[2] + 0.2 / 2), (-.4, -.15, self.pos_table[2] + 0.15)]
+		orientations = [(0, 0, 0), (0, 0, np.pi / 4), (0, 0, np.pi / 8)]
+
+		for body, pos, ori in zip(self.static_object, positions, orientations):
+			self.setStartPositionAndOrienation(self.static_object[body], pos,
+											   self.load_start_orientation(ori))
 
 
 	def load_random_box_position(self):
@@ -165,19 +177,16 @@ class BuildWorldScenarioTable(object):
 		# print("Position: {}, {}".format(x, y))
 		return [x, y, 0]
 
-	def load_start_orientation(self):
-		w = np.random.uniform(0, 2 * np.pi)
-		startOrientationRPY = [0, 0, 0]
+	def load_start_orientation(self, angle):
 
 		# print("Orientation: {}".format(p.getQuaternionFromEuler(startOrientationRPY)))
-		return p.getQuaternionFromEuler(startOrientationRPY)
+		return p.getQuaternionFromEuler(angle)
 
 	def setStartPositionAndOrienation(self, id, position, orientation):
 		"""
 			ATTENTIONS: CALL THIS FUNCTION ONLY WHEN THE SIMULATION STARTS!!!!!!!!!
 		"""
 		p.resetBasePositionAndOrientation(id, position, orientation)
-
 
 	def reset(self):
 		with HideOutput():
@@ -207,24 +216,24 @@ class BuildWorldScenarioTable(object):
 def transform2list(input_string):
 	num_bodies = int(input_string[0])
 
-	c = list(map(float, input_string[1:4 * num_bodies + 1]))
-	p = list(map(float, input_string[4 * num_bodies + 1:4 * num_bodies + 3 * num_bodies + 1]))
-	o = list(map(float, input_string[4 * num_bodies + 3 * num_bodies + 1:]))
+	c = list(map(float, input_string[1:4*num_bodies+1]))
+	p = list(map(float, input_string[4*num_bodies+1:4*num_bodies+3*num_bodies+1]))
+	o = list(map(float, input_string[4*num_bodies+3*num_bodies +1:]))
 
 	colors, positions, orientations = [], [], []
 	for i in range(num_bodies):
-		colors.append(tuple(c[i * 4:i * 4 + 4]))
-		positions.append(tuple(p[i * 3:i * 3 + 3]))
-		orientations.append(tuple(o[i * 3:i * 3 + 3]))
+		colors.append(tuple(c[i*4:i*4+4]))
+		positions.append(tuple(p[i*3:i*3+3]))
+		orientations.append(tuple(o[i*3:i*3+3]))
 
 	return colors, positions, orientations
 
 
-
 def display_scenario():
 	connect(use_gui=True)
-
-	scn = BuildWorldScenarioTable(None, False)
+	import os
+	#scn = BuildWorldScenarioStatic(os.path.dirname(os.path.abspath(__file__)) + "\\bd_box_static_config.txt", True)
+	scn = BuildWorldScenarioWalls(None, False)
 	scn.get_elements()
 
 	for i in range(10000):
@@ -233,5 +242,3 @@ def display_scenario():
 
 	disconnect()
 	print('Finished.')
-
-display_scenario()

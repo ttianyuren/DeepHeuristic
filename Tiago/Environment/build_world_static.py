@@ -71,7 +71,7 @@ class BuildWorldScenarioStatic(object):
 
 				if path is not None:
 					num_lines = sum(1 for line in open(path)) - 1
-					random_config = np.random.randint(0, num_lines)
+					random_config = 2#np.random.randint(0, num_lines)
 
 					self.bd_body = {}
 					with open(path) as file:
@@ -80,12 +80,13 @@ class BuildWorldScenarioStatic(object):
 								color, position, orientation = transform2list(list(line.rstrip('\n').split(" ")))
 								for i, (c, pos, ori) in enumerate(zip(color, position, orientation)):
 									self.bd_body["box" + str(i + 1)] = create_box(.07, .07, .1, mass=mass, color=c)
-									self.setStartPositionAndOrienation(self.bd_body["box" + str(i + 1)], list(pos), p.getQuaternionFromEuler(ori))
+									self.setStartPositionAndOrienation(self.bd_body["box" + str(i + 1)], list(pos), ori)
 
 				else:
-					import Tiago.Enviroments.generator as gen
-					#gen.random_generator('static_enviroment_em.txt', self.static_object)
-					gen.random_generator('static_enviroment_hm.txt', self.static_object)
+					import Tiago.Environment.generator as gen
+					self.static_object['underground'] = self.table
+					#gen.random_generator('Environment/static_environment_em.txt', self.static_object)
+					#gen.random_generator('Environment/static_environment_hm.txt', self.static_object)
 
 				self.bd_body.update(dict((self.bd_body[k], k) for k in self.bd_body))
 				self.static_object.update(dict((self.static_object[k], k) for k in self.static_object))
@@ -208,13 +209,13 @@ def transform2list(input_string):
 
 	c = list(map(float, input_string[1:4*num_bodies+1]))
 	p = list(map(float, input_string[4*num_bodies+1:4*num_bodies+3*num_bodies+1]))
-	o = list(map(float, input_string[4*num_bodies+3*num_bodies +1:]))
+	o = list(map(float, input_string[4*num_bodies+3*num_bodies+1:]))
 
 	colors, positions, orientations = [], [], []
 	for i in range(num_bodies):
 		colors.append(tuple(c[i*4:i*4+4]))
 		positions.append(tuple(p[i*3:i*3+3]))
-		orientations.append(tuple(o[i*3:i*3+3]))
+		orientations.append(tuple(o[i*4:i*4+4]))
 
 	return colors, positions, orientations
 
@@ -232,5 +233,3 @@ def display_scenario():
 
 	disconnect()
 	print('Finished.')
-
-display_scenario()
