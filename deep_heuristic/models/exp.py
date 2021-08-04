@@ -22,25 +22,3 @@ for i in range(0):
     print(x_train_labels[i])
     plt.imshow(arr, 'gray', vmin=0, vmax=1)
     plt.show()
-
-"""
-def year(start, capital, add):
-    return (start + add) * 1.3, capital + add
-
-capital = 1200
-all = 1000
-for i in range(2):
-    all, capital = year(all, capital, 1200)
-print("First 2.")
-
-for i in range(6):
-    all, capital = year(all, capital, 6000)
-print("First 8.")
-
-for i in range(10):
-    all, capital = year(all, capital, 0)
-
-print("all: ", all)
-print("capital: ", capital)
-print("win: ", all - capital)
-"""

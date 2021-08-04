@@ -254,22 +254,20 @@ def main():
     waiting_time = 10
     st = time.time()
 
-    for _ in range(300):
-        run(wait=waiting_time)
+    # run(wait=waiting_time)
 
     thinking_time = time.time() - st - waiting_time
     print("CNN: ", False, ", thinking:", thinking_time)
 
     st = time.time()
 
-    for _ in range(300):
-        run(cnn=True, wait=waiting_time)
+    run(cnn=True, wait=waiting_time)
 
     thinking_time = time.time() - st - waiting_time
     print("CNN: ", True, ", thinking:", thinking_time)
 
 
-def run(cnn=False, nn=False, target=3, wait=0):
+def run(cnn=False, nn=False, target=0, wait=0):
     visualization = 1
     connect(use_gui=visualization)
     scn = BuildWorldScenario()

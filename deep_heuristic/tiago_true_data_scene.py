@@ -133,7 +133,7 @@ def gather_training_data():
     robot = scn.tiago
     tdata_workspace = []
 
-    file_reach = 'reach_tiago.pk'
+    file_reach = 'training_data/reach_tiago.pk'
 
     if os.path.exists(file_reach):
         with open(file_reach, 'rb') as f:
@@ -162,16 +162,14 @@ def gather_training_data():
             direction = 0
             for dist, fdir_jj, z_jj in zip(list_dist, list_dir_jj, list_z_jj):
                 if dist > 1:
-                    tdata_workspace.append(
-                        ((direction, dist, fdir_jj, z_jj),
-                         False))
                     direction += 1
                     continue
                 grasp_dir = GraspDirection(body, direction)
                 grasp = f_sample_grasp.search((body, grasp_dir))[0]
-                approach_conf, command, q_approach, q_grasp = f_ik_grasp.search((body, body_pose, grasp))
+                _, _, _, q_grasp = f_ik_grasp.search((body, body_pose, grasp))
                 label = q_grasp is not None  # if the object is reachable
-                tdata_workspace.append(((direction, dist, fdir_jj, z_jj), label))
+                if label:
+                    tdata_workspace.append(((direction, dist, fdir_jj, z_jj), label))
                 direction += 1
 
         with open(file_reach, 'wb') as f:
@@ -182,6 +180,8 @@ def gather_training_data():
         print(
             'ep {}, {}    reach = {}/{}'.format(ep, str_now, len([y for x, y in tdata_workspace if y]),
                                                                    len(tdata_workspace)))
+        if len([y for x, y in tdata_workspace if y])/len(tdata_workspace) > 0.49:
+            break
 
     disconnect()
     print('Finished.')
