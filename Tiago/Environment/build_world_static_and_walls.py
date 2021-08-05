@@ -8,7 +8,7 @@ from numpy.core.fromnumeric import size
 import pybullet as p
 import csv
 import pickle
-
+from Tiago.Environment.generator import transform2list
 from copy import copy
 
 from utils.pybullet_tools.darias_primitives import BodyConf
@@ -87,7 +87,7 @@ class BuildWorldScenarioWalls(object):
 								color, position, orientation = transform2list(list(line.rstrip('\n').split(" ")))
 								for i, (c, pos, ori) in enumerate(zip(color, position, orientation)):
 									self.bd_body["box" + str(i + 1)] = create_box(.07, .07, .1, mass=mass, color=c)
-									self.setStartPositionAndOrienation(self.bd_body["box" + str(i + 1)], list(pos), p.getQuaternionFromEuler(ori))
+									self.setStartPositionAndOrienation(self.bd_body["box" + str(i + 1)], list(pos), ori)
 
 				else:
 					import Tiago.Environment.generator as gen
@@ -102,11 +102,25 @@ class BuildWorldScenarioWalls(object):
 
 				enable_gravity()
 
-		self.movable_bodies = [self.bd_body[k] for k in self.bd_body]
+		self.movable_bodies = []
+		for k in self.bd_body:
+			if isinstance(k, str):
+				self.movable_bodies.append(self.bd_body[k])
+
 		if fixed_object == True:
-			self.env_bodies = [self.floor] + [self.static_object[k] for k in self.static_object] + [self.walls[k] for k in self.walls]
+			self.env_bodies = [self.floor]
+			for k in self.static_object:
+				if isinstance(k, str):
+					self.env_bodies.append(self.static_object[k])
+
+			for k in self.walls:
+				if isinstance(k, str):
+					self.env_bodies.append(self.walls[k])
 		else:
-			self.env_bodies = [self.floor] +  [self.walls[k] for k in self.walls]
+			self.env_bodies = [self.floor]
+			for k in self.walls:
+				if isinstance(k, str):
+					self.env_bodies.append(self.walls[k])
 
 		self.regions = [self.table]
 
@@ -211,22 +225,6 @@ class BuildWorldScenarioWalls(object):
 
 	def load_world(self):
 		pass
-
-
-def transform2list(input_string):
-	num_bodies = int(input_string[0])
-
-	c = list(map(float, input_string[1:4*num_bodies+1]))
-	p = list(map(float, input_string[4*num_bodies+1:4*num_bodies+3*num_bodies+1]))
-	o = list(map(float, input_string[4*num_bodies+3*num_bodies +1:]))
-
-	colors, positions, orientations = [], [], []
-	for i in range(num_bodies):
-		colors.append(tuple(c[i*4:i*4+4]))
-		positions.append(tuple(p[i*3:i*3+3]))
-		orientations.append(tuple(o[i*3:i*3+3]))
-
-	return colors, positions, orientations
 
 
 def display_scenario():

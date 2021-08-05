@@ -8,6 +8,7 @@ from numpy.core.fromnumeric import size
 import pybullet as p
 
 from copy import copy
+from Tiago.Environment.generator import transform2list
 
 from utils.pybullet_tools.darias_primitives import BodyConf
 from utils.pybullet_tools.utils import LockRenderer, enable_gravity, step_simulation, WorldSaver, connect, set_pose, \
@@ -68,21 +69,20 @@ class BuildWorldScenarioTable(object):
 								color, position, orientation = transform2list(list(line.rstrip('\n').split(" ")))
 								for i, (c, pos, ori) in enumerate(zip(color, position, orientation)):
 									self.bd_body["box" + str(i + 1)] = create_box(.07, .07, .1, mass=mass, color=c)
-									self.setStartPositionAndOrienation(self.bd_body["box" + str(i + 1)], list(pos),
-																	   p.getQuaternionFromEuler(ori))
+									self.setStartPositionAndOrienation(self.bd_body["box" + str(i + 1)], list(pos), ori)
 
 				else:
 					import Tiago.Environment.generator as gen
 					gen.random_generator('Environment/table_environment_em.txt', {"table": 1})
 
 				self.bd_body.update(dict((self.bd_body[k], k) for k in self.bd_body))
-				self.setBoxPositionAndOrientation()
 
 				enable_gravity()
 
-		self.movable_bodies = [self.bd_body['box1'], self.bd_body['box2'],
-							   self.bd_body['box3'], self.bd_body['box4'], self.bd_body['box5'],
-							   self.bd_body['box6'], self.bd_body['box7']]
+		self.movable_bodies = []
+		for k in self.bd_body:
+			if isinstance(k, str):
+				self.movable_bodies.append(self.bd_body[k])
 
 		self.env_bodies = [self.floor]
 		self.regions = [self.table, self.top_table]
@@ -200,21 +200,6 @@ class BuildWorldScenarioTable(object):
 	def load_world(self):
 		pass
 
-
-def transform2list(input_string):
-	num_bodies = int(input_string[0])
-
-	c = list(map(float, input_string[1:4 * num_bodies + 1]))
-	p = list(map(float, input_string[4 * num_bodies + 1:4 * num_bodies + 3 * num_bodies + 1]))
-	o = list(map(float, input_string[4 * num_bodies + 3 * num_bodies + 1:]))
-
-	colors, positions, orientations = [], [], []
-	for i in range(num_bodies):
-		colors.append(tuple(c[i * 4:i * 4 + 4]))
-		positions.append(tuple(p[i * 3:i * 3 + 3]))
-		orientations.append(tuple(o[i * 3:i * 3 + 3]))
-
-	return colors, positions, orientations
 
 
 

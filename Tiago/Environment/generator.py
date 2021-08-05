@@ -114,3 +114,20 @@ def load_random_box_position():
 		y = np.random.uniform(-table_config[1] / 2 + 0.1, table_config[1] / 2 - 0.1)
 
 	return [x, y, z]
+
+
+
+def transform2list(input_string):
+	num_bodies = int(input_string[0])
+
+	c = list(map(float, input_string[1:4*num_bodies+1]))
+	p = list(map(float, input_string[4*num_bodies+1:4*num_bodies+3*num_bodies+1]))
+	o = list(map(float, input_string[4*num_bodies+3*num_bodies+1:]))
+
+	colors, positions, orientations = [], [], []
+	for i in range(num_bodies):
+		colors.append(tuple(c[i*4:i*4+4]))
+		positions.append(tuple(p[i*3:i*3+3]))
+		orientations.append(tuple(o[i*4:i*4+4]))
+
+	return colors, positions, orientations
