@@ -23,7 +23,7 @@ from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_c
 import  json
 
 class BuildWorldScenarioStatic(object):
-	def __init__(self, path=None, fixed_object=False):
+	def __init__(self, path=None, fixed_object=False, random_config=None):
 		with HideOutput():
 			with LockRenderer():
 				self.pos_table = [0, 0, 0.58]
@@ -36,8 +36,8 @@ class BuildWorldScenarioStatic(object):
 				self.floor = load_model('models/short_floor.urdf', fixed_base=True)
 
 				""" TIAGO ROBOT INIZIALIZATION """
-				startPosition = [0, -.8, 0.02]
-				startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
+				startPosition = self.load_start_position()
+				startOrientation = self.load_start_orientation()
 
 				self.tiago = load_pybullet("../Tiago/tiago_description/tiago.urdf",
 										   position=startPosition,
@@ -70,8 +70,9 @@ class BuildWorldScenarioStatic(object):
 				self.setBoxPositionAndOrientation(fixed_object)
 
 				if path is not None:
-					num_lines = sum(1 for line in open(path)) - 1
-					random_config = np.random.randint(0, num_lines)
+					if random_config is None:
+						num_lines = sum(1 for line in open(path)) - 1
+						random_config = np.random.randint(0, num_lines)
 
 					self.bd_body = {}
 					with open(path) as file:
@@ -145,7 +146,7 @@ class BuildWorldScenarioStatic(object):
 
 		for body, pos, ori in zip(self.static_object, positions, orientations):
 			self.setStartPositionAndOrienation(self.static_object[body], pos,
-											   self.load_start_orientation(ori))
+											   p.getQuaternionFromEuler(ori))
 
 
 	def load_random_box_position(self):
@@ -158,6 +159,10 @@ class BuildWorldScenarioStatic(object):
 			y = np.random.uniform(-self.table_config[1] / 2 + 0.1, self.table_config[1] / 2 - 0.1)
 
 		return [x, y, z]
+
+	def load_start_orientation(self):
+		w = [0, 0, np.random.uniform(0, 2 * np.pi)]
+		return p.getQuaternionFromEuler(w)
 
 
 	def load_start_position(self):
@@ -175,12 +180,8 @@ class BuildWorldScenarioStatic(object):
 			y = y - 1
 
 		# print("Position: {}, {}".format(x, y))
-		return [x, y, 0]
+		return [x, y, 0.02]
 
-	def load_start_orientation(self, angle):
-
-		# print("Orientation: {}".format(p.getQuaternionFromEuler(startOrientationRPY)))
-		return p.getQuaternionFromEuler(angle)
 
 	def setStartPositionAndOrienation(self, id, position, orientation):
 		"""

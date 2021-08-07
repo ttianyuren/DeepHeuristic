@@ -22,7 +22,7 @@ from Tiago.tiago_utils import open_arm, close_arm, set_group_conf, get_initial_c
 
 
 class BuildWorldScenarioTable(object):
-	def __init__(self, path=None):
+	def __init__(self, path=None, random_config=None):
 		with HideOutput():
 			with LockRenderer():
 				# table = (länge = 1.5, breite = 1)
@@ -38,8 +38,8 @@ class BuildWorldScenarioTable(object):
 				self.floor = load_model('models/short_floor.urdf', fixed_base=True)
 
 				""" TIAGO ROBOT INIZIALIZATION """
-				startPosition = [0, -.8, 0.02]
-				startOrientation = p.getQuaternionFromEuler([0, 0, np.pi / 2])
+				startPosition = self.load_start_position()
+				startOrientation = self.load_start_orientation()
 
 				self.tiago = load_pybullet("../Tiago/tiago_description/tiago.urdf",
 										   position=startPosition,
@@ -59,8 +59,9 @@ class BuildWorldScenarioTable(object):
 				mass = 1  # in kg
 
 				if path is not None:
-					num_lines = sum(1 for line in open(path)) - 1
-					random_config = np.random.randint(0, num_lines)
+					if random_config is None:
+						num_lines = sum(1 for line in open(path)) - 1
+						random_config = np.random.randint(0, num_lines)
 
 					self.bd_body = { }
 					with open(path) as file:
@@ -145,6 +146,8 @@ class BuildWorldScenarioTable(object):
 		return [x, y, z]
 
 
+
+
 	def load_start_position(self):
 		x = np.random.uniform(-5, 5)
 		y = np.random.uniform(-5, 5)
@@ -160,14 +163,12 @@ class BuildWorldScenarioTable(object):
 			y = y - 1
 
 		# print("Position: {}, {}".format(x, y))
-		return [x, y, 0]
+		return [x, y, 0.02]
+
 
 	def load_start_orientation(self):
-		w = np.random.uniform(0, 2 * np.pi)
-		startOrientationRPY = [0, 0, 0]
-
-		# print("Orientation: {}".format(p.getQuaternionFromEuler(startOrientationRPY)))
-		return p.getQuaternionFromEuler(startOrientationRPY)
+		w = [0, 0, np.random.uniform(0, 2 * np.pi)]
+		return p.getQuaternionFromEuler(w)
 
 	def setStartPositionAndOrienation(self, id, position, orientation):
 		"""
@@ -199,8 +200,6 @@ class BuildWorldScenarioTable(object):
 
 	def load_world(self):
 		pass
-
-
 
 
 def display_scenario():
