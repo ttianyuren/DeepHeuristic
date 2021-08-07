@@ -14,13 +14,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
 
 EPOCHS = 100
-BATCH_SIZE = 100
-LEARNING_RATE = 0.0005
+BATCH_SIZE = 64
+LEARNING_RATE = 0.001
 
 ################################################## Data Preprocessing ##################################################
 
 train_data, train_labels, eval_data, eval_labels = split_data(
-    load_workspace(file_reach="../training_data/reach_tiago.pk"), test_size=0., num_of_param=4, shuffle=True)
+    load_workspace(file_reach="../training_data/reach_tiago.pk"), test_size=0., num_of_param=4, shuffle=True, exclude_feature=None)
 
 INPUTS = len(train_data[0])
 
@@ -47,23 +47,23 @@ class BinaryClassification(nn.Module):
         super(BinaryClassification, self).__init__()
         # Number of input features is 12.
         self.layer_1 = nn.Linear(INPUTS, 12)
-        self.layer_2 = nn.Linear(12, 8)
-        self.layer_3 = nn.Linear(8, 3)
-        self.layer_out = nn.Linear(3, 1)
+        self.layer_2 = nn.Linear(12, 4)
+        # self.layer_3 = nn.Linear(8, 3)
+        self.layer_out = nn.Linear(4, 1)
 
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=.2)
         self.batchnorm1 = nn.BatchNorm1d(12)
-        self.batchnorm2 = nn.BatchNorm1d(8)
-        self.batchnorm3 = nn.BatchNorm1d(3)
+        self.batchnorm2 = nn.BatchNorm1d(4)
+        # self.batchnorm3 = nn.BatchNorm1d(3)
 
     def forward(self, inputs):
         x = self.relu(self.layer_1(inputs))
         x = self.batchnorm1(x)
         x = self.relu(self.layer_2(x))
         x = self.batchnorm2(x)
-        x = self.relu(self.layer_3(x))
-        x = self.batchnorm3(x)
+        # x = self.relu(self.layer_3(x))
+        # x = self.batchnorm3(x)
         x = self.dropout(x)
         x = self.layer_out(x)
         return x

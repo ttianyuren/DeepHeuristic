@@ -17,7 +17,7 @@ class BinaryClassification(nn.Module):
     def __init__(self):
         super(BinaryClassification, self).__init__()
         # Number of input features is 12.
-        self.layer_1 = nn.Linear(3, 12)
+        self.layer_1 = nn.Linear(4, 12)
         self.layer_2 = nn.Linear(12, 4)
         self.layer_out = nn.Linear(4, 1)
 
@@ -77,7 +77,7 @@ def predict_grasp_direction(img):
 
 
 nn_model = BinaryClassification()
-nn_model.load_state_dict(torch.load("./models/NN_Tiago_Model.pk"))
+nn_model.load_state_dict(torch.load("./models/NN_Model_Tiago.pk"))
 
 def predict_reachability(dist, direction, z):
     X_test = scalar.fit_transform([[dist], [direction], [z]])
