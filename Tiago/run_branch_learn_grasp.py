@@ -250,7 +250,6 @@ def get_op_plan(scn, target, path=None):
     return op_plan
 
 
-
 #######################################################
 def main():
 
