@@ -8,7 +8,7 @@ from numpy.core.fromnumeric import size
 import pybullet as p
 import csv
 import pickle
-from Tiago.Environment.generator import transform2list
+from Tiago.environment.generator import transform2list
 from copy import copy
 
 from utils.pybullet_tools.darias_primitives import BodyConf

@@ -8,7 +8,7 @@ from numpy.core.fromnumeric import size
 import pybullet as p
 
 from copy import copy
-from Tiago.Environment.generator import transform2list
+from Tiago.environment.generator import transform2list
 
 from utils.pybullet_tools.darias_primitives import BodyConf
 from utils.pybullet_tools.utils import LockRenderer, enable_gravity, step_simulation, WorldSaver, connect, set_pose, \
@@ -63,7 +63,7 @@ class BuildWorldScenarioTable(object):
 						num_lines = sum(1 for line in open(path)) - 1
 						random_config = np.random.randint(0, num_lines)
 
-					self.bd_body = { }
+					self.bd_body = {}
 					with open(path) as file:
 						for idx, line in enumerate(file):
 							if idx == random_config:
