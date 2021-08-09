@@ -79,9 +79,10 @@ def predict_grasp_direction(img):
 nn_model = BinaryClassification()
 nn_model.load_state_dict(torch.load("./models/NN_Model_Tiago.pk"))
 
-def predict_reachability(dist, direction, z):
-    X_test = scalar.fit_transform([[dist], [direction], [z]])
+
+def predict_reachability(grasp, dist, direction, z):
+    X_test = scalar.fit_transform([[grasp], [dist], [direction], [z]])
     X_test = torch.reshape(torch.tensor(X_test), (1, -1)).float()
     y_pred = nn_model(X_test)
     y_pred = torch.sigmoid(y_pred)
-    return torch.round(y_pred)
+    return y_pred.detach().item()
