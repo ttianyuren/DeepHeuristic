@@ -79,6 +79,8 @@ class BodyGrasp(object):
 class sdg_sample_grasp_dir(object):
     def __init__(self, cnn=False, target=None, target_info=None, robot=None):
         self.cnn = cnn
+        self.target = target
+        self.robot = robot
         ellipsoid_frame, obj_extent, _, _, _ = get_ellipsoid_frame(target, target_info, robot)
         self.mat_image = get_raytest_scatter3(target, ellipsoid_frame, obj_extent, robot)
         if cnn is None:
@@ -106,8 +108,8 @@ class sdg_sample_grasp_dir(object):
             i = 0
             while i < 10:
                 i += 1
-                direction = cnn_method(self.mat_image)
-                print(direction)
+                direction = cnn_method(self.mat_image, get_pose(self.robot)[0], get_pose(self.target)[0])
+                # print(direction)
                 if direction is not None:
                     break
         elif seed is None:
@@ -118,12 +120,14 @@ class sdg_sample_grasp_dir(object):
         return (GraspDirection(body, direction),)
 
 
-def cnn_method(mat_image):
+def cnn_method(mat_image, robot, target):
     # plt.imshow(mat_image, 'gray', vmin=0, vmax=1)
     # plt.show()
     dic = predict_grasp_direction(mat_image)
-    print(dic)
-    if dic.get(2)[0] >= 90:
+    # print(dic)
+    z1 = robot[2]
+    z2 = target[2]
+    if dic.get(2)[0] >= 90 and z1 + 0.9 > z2:
         return 2
     elif dic.get(0)[0] >= 50:
         return 0
@@ -143,16 +147,15 @@ class sdg_sample_base_position(object):
         self.target = target
         self.target_info = target_info
 
-    def __call__(self, input_tuple, num_of_attempts=100, seed=None):
+    def __call__(self, input_tuple, num_of_attempts=30, seed=None):
         box_grasp, surface, grasp_dir = input_tuple
         grasp_dir = grasp_dir.direction
         assert grasp_dir is not None
         robot = box_grasp.robot
         obstacles = list(set(self.all_bodies) - {robot, surface})
-
         _, _, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(self.target, self.target_info, robot)
-        if is_reachable(self.nn, list_dist[grasp_dir], list_dir_jj[grasp_dir], list_z_jj[grasp_dir]):
-                # and not any(pairwise_collision(robot, b) for b in obstacles):
+        if is_reachable(self.nn, grasp_dir, list_dist[grasp_dir], list_dir_jj[grasp_dir], list_z_jj[grasp_dir])\
+                and (not any(pairwise_collision(robot, b) for b in obstacles)) and re(robot, box_grasp):
             body_conf = BodyConf(robot)
             return (body_conf,)
 
@@ -163,16 +166,39 @@ class sdg_sample_base_position(object):
             """1) Generation"""
             pose = sample_placement(robot, surface)
             """2) Validation"""
+            pose = set_orientation_to_object(pose, robot, box_id)
             if (pose is None) or any(pairwise_collision(robot, b) for b in obstacles):
                 continue
 
             _, _, list_dist, list_dir_jj, list_z_jj = get_ellipsoid_frame(self.target, self.target_info, robot)
-            if not is_reachable(self.nn, list_dist[grasp_dir], list_dir_jj[grasp_dir], list_z_jj[grasp_dir]):
+            if not (is_reachable(self.nn, grasp_dir, list_dist[grasp_dir], list_dir_jj[grasp_dir], list_z_jj[grasp_dir])\
+                    and re(robot, box_grasp)):
                 continue
-            pose = set_orientation_to_object(pose, robot, box_id)
+            # pose = set_orientation_to_object(pose, robot, box_id)
             body_conf = BodyConf(robot)
             return (body_conf, )
         return None
+
+
+def re(robot, box):
+    robot = list(get_pose(robot)[0])
+    app = list(box.approach_pose[0])
+    grasp = list(box.grasp_pose[0])
+
+    difference = []
+    zip_object = zip(robot, app)
+    for list1_i, list2_i in zip_object:
+        difference.append(list1_i - list2_i)
+    a = np.linalg.norm(difference)
+
+    difference = []
+    zip_object = zip(robot, grasp)
+    for list1_i, list2_i in zip_object:
+        difference.append(list1_i - list2_i)
+    b = np.linalg.norm(difference)
+    if a > b:
+        return True
+    return False
 
 
 def set_orientation_to_object(pose, robot, box_id):
@@ -191,11 +217,15 @@ def get_z_rotation(robot, box_id):
     return (rad + 2 * np.pi) % (2*np.pi)
 
 
-def is_reachable(nn, dist, dir, z):
-    if nn:
-        return predict_reachability(dist, dir, z)
-    else:
-        return dist <= 0.9
+def is_reachable(nn, grasp, dist, dir, z):
+    if dist <= 0.8:
+        if nn:
+            res = predict_reachability(grasp, dist, dir, z)
+            # print(res)
+            return res > 0.5
+        else:
+            return True
+    return False
 
 
 class sdg_sample_grasp(object):
@@ -229,7 +259,7 @@ class sdg_sample_grasp(object):
             swap_z = Pose(euler=[np.pi, 0, 0])
             d1, d2 = 0., 0.  # [-0.5, 0.5]
             translate_point = Pose(point=[ex / 2, 0 + d1 * ey, ez / 2 + d2 * ez])
-            for j in range(2):
+            for j in range(1):
                 rotate_z = Pose(euler=[0, 0, j * 2 * np.pi + np.pi])
                 grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
                 list_grasp.append(grasp)
@@ -241,7 +271,7 @@ class sdg_sample_grasp(object):
             swap_z = Pose(euler=[0, 0, - np.pi / 2])
             d1, d2 = 0., 0.  # [-0.5, 0.5]
             translate_point = Pose(point=[0 - d1 * ex, ey / 2, ez / 2 + d2 * ez])
-            for j in range(2):
+            for j in range(1):
                 rotate_z = Pose(euler=[j * -np.pi / 2, 0, 0])
                 grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
                 list_grasp.append(grasp)
@@ -266,19 +296,19 @@ class sdg_sample_grasp(object):
             # translate_point: choose from the grasping surface with 2 dof
             d1, d2 = 0., 0.  # [-0.5, 0.5]
             translate_point = Pose(point=[-ex / 2, 0 - d1 * ey, ez / 2 + d2 * ez])
-            for j in range(2):
+            for j in range(1):
                 rotate_z = Pose(euler=[0, 0,  -j * 2 * np.pi])
                 grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
                 list_grasp.append(grasp)
 
-            approach_pose = Pose(0.1 * Point(z=-1))  # pose bias wrt end-effector frame
+            approach_pose = Pose(0.1 * Point(x=-1))  # pose bias wrt end-effector frame
 
         elif grasp_dir == 4:
             """ee at -Y"""
             swap_z = Pose(euler=[0, 0, np.pi / 2])
             d1, d2 = 0., 0.  # [-0.5, 0.5]
             translate_point = Pose(point=[0 + d1 * ex, -ey / 2, ez / 2 + d2 * ez])
-            for j in range(2):
+            for j in range(1):
                 rotate_z = Pose(euler=[j * np.pi, 0, 0])
                 grasp = multiply(translate_point, swap_z, rotate_z, translate_z)
                 list_grasp.append(grasp)
@@ -325,7 +355,7 @@ class BodyInfo(object):
         return 'bi{}'.format(id(self) % 1000)
 
 class sdg_ik_grasp(object):
-    def __init__(self, robot, all_bodies=[], teleport=False, num_attempts=100):
+    def __init__(self, robot, all_bodies=[], teleport=False, num_attempts=25):
         self.all_bodies = all_bodies
         self.teleport = teleport
         self.num_attempts = num_attempts
