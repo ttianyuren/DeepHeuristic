@@ -35,6 +35,9 @@ from etamp.p_uct2 import PlannerUCT
 from etamp.tree_node2 import ExtendedNode
 from etamp.env_sk_branch import SkeletonEnv
 from Tiago.build_world_learn_grasp import BuildWorldScenario
+from Tiago.environment.build_world_static_and_walls import BuildWorldScenarioWalls
+from Tiago.environment.build_world_top_table import BuildWorldScenarioTable
+from Tiago.environment.build_world_static import BuildWorldScenarioStatic
 from etamp.topk_skeleton import EXE_Action, EXE_Stream
 from etamp.pddlstream.language.object import Object, OptimisticObject, EXE_Object, EXE_OptimisticObject, get_hash
 
@@ -251,26 +254,29 @@ def get_op_plan(scn, target, path=None):
 #######################################################
 def main():
 
-    waiting_time = 10
-    st = time.time()
+    waiting_time = 0
+    envs = 8
+    iterations = 5
 
-    # run(wait=waiting_time)
+    for i in range(envs):
+        st = time.time()
+        for _ in range(iterations):
+            run(cnn=False, nn=True, wait=waiting_time, config=i)
+        thinking_time = time.time() - st - waiting_time * iterations
+        print("CNN: True, NN: True, thinking:", thinking_time / iterations, "Env: ", i)
 
-    thinking_time = time.time() - st - waiting_time
-    print("CNN: ", False, ", thinking:", thinking_time)
-
-    st = time.time()
-
-    run(cnn=True, wait=waiting_time)
-
-    thinking_time = time.time() - st - waiting_time
-    print("CNN: ", True, ", thinking:", thinking_time)
+        st = time.time()
+        for _ in range(iterations):
+            run(cnn=False, nn=False, wait=waiting_time, config=i)
+        thinking_time = time.time() - st - waiting_time * iterations
+        print("CNN: False, NN: False, thinking:", thinking_time / iterations, "Env: ", i)
 
 
-def run(cnn=False, nn=False, target=0, wait=0):
-    visualization = 1
+def run(cnn=False, nn=False, target=0, wait=0, config=None, visualization=1):
     connect(use_gui=visualization)
-    scn = BuildWorldScenario()
+    # path = "environment/table_environment_em.txt"
+    path = "environment/static_environment_em.txt"
+    scn = BuildWorldScenarioStatic(path, random_config=config) # BuildWorldScenarioTable(path, random_config=config) # BuildWorldScenario()#
     robot = scn.robots[0]
     target = scn.movable_bodies[target]
     target_info = scn.dic_body_info[target]
