@@ -77,7 +77,7 @@ class PlanningScenario(object):
             pose = sample_placement(self.tiago, self.floor)
             obstacles = list(set(self.all_bodies))
             counter = 0
-            while ((pose is None) or any(pairwise_collision(robot, b) for b in obstacles)) and counter < 50:
+            while ((pose is None) or any(pairwise_collision(self.tiago, b) for b in obstacles)) and counter < 50:
                 counter += 1
                 pose = sample_placement(self.tiago, self.floor)
 

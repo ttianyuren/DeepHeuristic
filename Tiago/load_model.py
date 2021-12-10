@@ -77,7 +77,9 @@ def predict_grasp_direction(img):
 
 
 nn_model = BinaryClassification()
-nn_model.load_state_dict(torch.load("./models/NN_Model_Tiago.pk"))
+# nn_model.load_state_dict(torch.load("./models/NN_Model_Tiago.pk"))
+nn_model.load_state_dict(torch.load("./models/NN_Tiago_Model.pk"))
+
 
 
 def predict_reachability(grasp, dist, direction, z):
