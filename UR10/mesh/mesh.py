@@ -43,8 +43,8 @@ class icosphere(object):
                 unpool_ind = self.unpool_indices(pool_ind, l - 1)
                 self.unpool_inds.append(unpool_ind)
 
-        for l, g in enumerate(self.graphs_by_level):
-            print("l={}, |V|={}, |E|={}".format(l, g.number_of_nodes(), g.number_of_edges()))
+        # for l, g in enumerate(self.graphs_by_level):
+        #     print("l={}, |V|={}, |E|={}".format(l, g.number_of_nodes(), g.number_of_edges()))
 
         self.graph = self.graphs_by_level[-1]
         self.nf, self.nv = self.faces.shape[0], self.vertices.shape[0]
