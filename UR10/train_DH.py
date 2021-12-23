@@ -27,7 +27,7 @@ def train_step(model, data_b, target_b, optimizer):
     output_b = torch.squeeze(model(data_b))
 
     # prediction_b = F.log_softmax(output_b, dim=-1)
-    prediction_b = F.sigmoid(output_b)
+    prediction_b = torch.sigmoid(output_b)
 
     # loss = F.nll_loss(prediction_b, target_b)  # TODO: change the loss function!
     loss = F.binary_cross_entropy(prediction_b, target_b)
@@ -50,7 +50,7 @@ def test_step(model, data_b, target_b):
     with torch.no_grad():
         output_b = torch.squeeze(model(data_b))
 
-        prediction_b = F.sigmoid(output_b)
+        prediction_b = torch.sigmoid(output_b)
         loss = F.binary_cross_entropy(prediction_b, target_b)
 
         correct = prediction_b.data.round().eq(target_b.data).long().cpu().sum()
@@ -270,6 +270,34 @@ def train(args):
     logger.info("Final: *ACC={:3f}".format(best_val_acc))
 
     return best_val_loss
+
+
+def get_arg():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--data_dir", default=".", help="Data directory")
+    parser.add_argument("-o", "--out", help="Name of output directory")
+    parser.add_argument("-b", "--batch_size", type=int, help="Batch size", default=32)  # 32
+    parser.add_argument('-l', '--level', type=int, dest='l', default=4, help='Level of mesh refinement')
+    parser.add_argument("-p", default="max", choices=["max", "mean", "sum"], help="Pooling type: [max, sum, mean]")
+    parser.add_argument("-F", type=int, help="Controls model layer parameters", default=4)
+    parser.add_argument("-g", help="Graph convolution type", choices=["gcn", "graphsage"], default="gcn")
+    parser.add_argument('-e', '--R_expand', help='Radial expansion factor for kernel', type=int, default=8)
+    parser.add_argument('-T', '--kernel-thresh', help='Threshold for kernel mapping', type=float, default=0.01)
+    parser.add_argument("--lr", type=float, default=2.2e-4)
+    parser.add_argument("--dropout", type=float, default=0.14)
+    parser.add_argument("--weight-decay", type=float, default=2.7e-7)
+    parser.add_argument("--seed", type=int, help='random seed', default=24)
+    parser.add_argument("--num-votes", type=int, help='Number of votes during testing (rotation only)', default=1)
+    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--rotate_train", default="SO3", choices=["NR", "z", "SO3"])
+    parser.add_argument("--rotate_test", default="SO3", choices=["NR", "z", "SO3"])
+    parser.add_argument('--device', default=0, type=int, help='GPU device ID')
+    parser.add_argument("--workers", type=int, default=6, help="Number of processes for data loading")
+    parser.add_argument("--debug", action='store_true', help="Debug mode")
+    parser.add_argument("--identifier", help="user-defined string to add to log name")
+    args = parser.parse_args()
+
+    return args
 
 
 if __name__ == "__main__":
