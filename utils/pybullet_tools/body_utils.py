@@ -44,7 +44,7 @@ def get_robot_jianXin_frame(robot):
 
 
 def place_objects(list_obj, region, all_bodies):
-    neighbor_r = np.array([0.40, 0.40, 0.0])
+    neighbor_r = np.array([0.30, 0.30, 0.0])
     aabb0 = get_aabb(region)
     aabb = copy(aabb0)
     list_remove = []
