@@ -335,6 +335,9 @@ if __name__ == '__main__':
             prediction = prediction.type(torch.int)
         q_approach_heuristic = dg.solve_ik_heuristic(prediction)
         cost_heuristic = time.time() - s
+        if q_approach_heuristic is not None and visualization:
+            print('A possible IK for grasping is found!')
+            time.sleep(3)
 
         if (q_approach_random is None and q_approach_heuristic is None) or (
                 q_approach_random is not None and q_approach_heuristic is not None):
