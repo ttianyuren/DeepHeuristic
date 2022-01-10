@@ -313,8 +313,8 @@ if __name__ == '__main__':
     list_cost_random = []
     list_cost_heuristic = []
 
-    successful_count = 0
-    failed_count = 0
+    success_count = 0
+    failure_count = 0
     N = 500
 
     file_result = 'test_propose_ik.pk'
