@@ -15,7 +15,7 @@ def color_fn(i):
         return 'lightseagreen'
 
 
-s = icosphere(2)
+s = icosphere(1)
 
 g = s.graphs_by_level[-1]
 

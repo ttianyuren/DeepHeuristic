@@ -148,6 +148,7 @@ class DataGenerator(object):
         inner_ends = unit_vertices * (max_range + r_inner) + centroid
         # draw_sphere(r_inner, centroid, [0, 1, 1, 0.5])
 
+
         """Temporarily move away the objects that are not involved in rayTest"""
         offset = [0, 0, -5]
         obj_pose = get_pose(self.target_obj)
@@ -161,8 +162,8 @@ class DataGenerator(object):
         r_outer = self.dic_body_info[self.target_obj][1]
         outer_vertices = unit_vertices * r_outer + temp_centroid
         outer_ends = np.dstack([temp_centroid] * len(outer_vertices))[0].transpose((1, 0))
-        # draw_sphere(r_outer, temp_centroid, [1, 1, 0, 0.5])
 
+        # draw_sphere(r_outer, temp_centroid, [1, 1, 0, 0.5])
         # draw_pointCloud(outer_ends, color=[0, 1, 1])
         # draw_pointCloud(outer_vertices, color=[1, 1, 0])
         #
@@ -302,7 +303,7 @@ class DataGenerator(object):
 
 
 if __name__ == '__main__':
-    visualization = False
+    visualization = True
 
     connect(use_gui=visualization)
 
@@ -311,7 +312,7 @@ if __name__ == '__main__':
     list_X = []
     list_labels = []
 
-    file_data = 'train_Xs_labels.pk'
+    file_data = '00train_Xs_labels.pk'
 
     # with HideOutput():
     for i in range(14000):  # 4000
