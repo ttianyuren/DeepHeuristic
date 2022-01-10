@@ -301,7 +301,7 @@ if __name__ == '__main__':
     model.load_state_dict(torch.load('trained_model_para.pkl'))
     print('...Completed!')
 
-    visualization = True
+    visualization = True  # True False
 
     connect(use_gui=visualization)
 
@@ -310,21 +310,51 @@ if __name__ == '__main__':
     list_X = []
     list_labels = []
 
+    list_cost_random = []
+    list_cost_heuristic = []
+
+    successful_count = 0
+    failed_count = 0
+    N = 500
+
+    file_result = 'test_propose_ik.pk'
+
     # with HideOutput():
-    for i in range(10):
+    for i in range(N):
         dg.reset()
         X = dg.get_X()
-
+        """Random IK search"""
+        s = time.time()
+        q_approach_random = dg.solve_ik_random()
+        cost_random = time.time() - s
+        """IK search with learned heuristic"""
+        s = time.time()
         with torch.no_grad():
             inputX = torch.FloatTensor([X]).cuda()
             output = torch.squeeze(model(inputX))
             prediction = torch.sigmoid(output).data.round().cpu()
             prediction = prediction.type(torch.int)
+        q_approach_heuristic = dg.solve_ik_heuristic(prediction)
+        cost_heuristic = time.time() - s
 
-        q_approach = dg.solve_ik_random()
-        if q_approach:
-            print('IK found!')
-            time.sleep(2)
+        if (q_approach_random is None and q_approach_heuristic is None) or (
+                q_approach_random is not None and q_approach_heuristic is not None):
+            """the two IK solvers come to the same results, i.e., not false negative"""
+            list_cost_heuristic.append(cost_heuristic)
+            list_cost_random.append(cost_random)
+            successful_count += 1
+
+        if len(list_cost_random) > 0 and (i + 1) % 10 == 0:
+            print("{}, Accuracy rate: {:.3f}, Cost ratio: {:.3f}".format(i, successful_count / float(i + 1),
+                                                                         sum(list_cost_heuristic) / sum(
+                                                                             list_cost_random)))
+            with open(file_result, 'wb') as f:
+                pk.dump((N, successful_count, list_cost_random, list_cost_heuristic), f)
 
     disconnect()
+    print("Accuracy rate: {:.3f}, Cost ratio: {:.3f}".format(successful_count / float(N),
+                                                             sum(list_cost_heuristic) / sum(
+                                                                 list_cost_random)))
+    with open(file_result, 'wb') as f:
+        pk.dump((N, successful_count, list_cost_random, list_cost_heuristic), f)
     print('Finished.')

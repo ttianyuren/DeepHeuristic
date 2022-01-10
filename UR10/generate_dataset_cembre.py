@@ -290,9 +290,11 @@ class DataGenerator(object):
         return None
 
     def solve_ik_heuristic(self, v_heuristic):
+        if not isinstance(v_heuristic, list):
+            v_heuristic = v_heuristic.tolist()
         outer_vertices, unit_vertices, outer_ends = self.get_icosphere_info(self.target_obj)
         for v, v_norm, h in zip(outer_vertices, unit_vertices, v_heuristic):
-            if v_heuristic == 1:
+            if h == 1:
                 q_approach = self.get_ik(v, v_norm)
                 if q_approach:
                     return q_approach
