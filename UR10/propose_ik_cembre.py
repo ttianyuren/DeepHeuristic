@@ -314,7 +314,6 @@ if __name__ == '__main__':
     list_cost_heuristic = []
 
     success_count = 0
-    failure_count = 0
     N = 500
 
     file_result = 'test_propose_ik.pk'
@@ -342,19 +341,19 @@ if __name__ == '__main__':
             """the two IK solvers come to the same results, i.e., not false negative"""
             list_cost_heuristic.append(cost_heuristic)
             list_cost_random.append(cost_random)
-            successful_count += 1
+            success_count += 1
 
-        if len(list_cost_random) > 0 and (i + 1) % 10 == 0:
-            print("{}, Accuracy rate: {:.3f}, Cost ratio: {:.3f}".format(i, successful_count / float(i + 1),
+        if len(list_cost_random) > 0:
+            print("Scene {}, Accuracy rate: {:.3f}, Cost ratio: {:.3f}".format(i, success_count / float(i + 1),
                                                                          sum(list_cost_heuristic) / sum(
                                                                              list_cost_random)))
             with open(file_result, 'wb') as f:
-                pk.dump((N, successful_count, list_cost_random, list_cost_heuristic), f)
+                pk.dump((N, success_count, list_cost_random, list_cost_heuristic), f)
 
     disconnect()
-    print("Accuracy rate: {:.3f}, Cost ratio: {:.3f}".format(successful_count / float(N),
+    print("Accuracy rate: {:.3f}, Cost ratio: {:.3f}".format(success_count / float(N),
                                                              sum(list_cost_heuristic) / sum(
                                                                  list_cost_random)))
     with open(file_result, 'wb') as f:
-        pk.dump((N, successful_count, list_cost_random, list_cost_heuristic), f)
+        pk.dump((N, success_count, list_cost_random, list_cost_heuristic), f)
     print('Finished.')
