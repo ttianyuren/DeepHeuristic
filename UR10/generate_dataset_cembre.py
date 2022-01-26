@@ -103,8 +103,69 @@ class DataGenerator(object):
         # return idx
         return self.regions[idx]
 
+    def get_test_msg(self, region=None):
+        if self.movable_bodies:
+            for b in self.movable_bodies:
+                p.removeBody(b)
+        self.reset_containers()
+
+        dim1 = [get_rand(), get_rand(), get_rand(low=0.12)]
+        dim2 = [get_rand(), get_rand(), get_rand(low=0.12)]
+        dim3 = [get_rand(), get_rand(), get_rand(low=0.12)]
+        dim4 = [get_rand(), get_rand(), get_rand(low=0.12)]
+
+        list_dim = [dim1, dim2, dim3, dim4]
+
+        obj1 = create_box(*dim1, mass=0.5, color=(0.859, 0.192, 0.306, 1.0))
+        obj2 = create_box(*dim2, mass=0.5, color=(0.271, 0.706, 0.490, 1.0))
+        obj3 = create_box(*dim3, mass=0.5, color=(0.271, 0.706, 0.490, 1.0))
+        obj4 = create_box(*dim4, mass=0.5, color=(0.271, 0.706, 0.490, 1.0))
+
+        movable_bodies = [obj1, obj2, obj3, obj4]
+        all_bodies = list(set(movable_bodies) | set(self.env_bodies) | set(self.regions))
+
+        if region is None:
+            region = self.sample_region()
+        list_remove = place_objects(movable_bodies, region, all_bodies)
+        for b in list_remove:
+            movable_bodies.remove(b)
+            all_bodies.remove(b)
+
+        msglist = []
+        for b, dim in zip(movable_bodies, list_dim):
+            pose = get_pose(b)
+            msglist.append((pose, dim))
+
+        return msglist
+
     # def remove_ee(self):
     #     set_pose(self.ee, Pose((0, 0, -20)))
+    def input_msg(self, msglist):
+        assert len(msglist) >= 1
+
+        if self.movable_bodies:
+            for b in self.movable_bodies:
+                p.removeBody(b)
+        self.reset_containers()
+
+        for o in msglist:
+            pose, dim = o
+            assert max(dim[:2]) <= 0.12 and min(dim[:2]) >= 0.05 and abs(dim[2] - 0.12) < 0.001
+            body = create_box(*dim, mass=0.5, color=(0.859, 0.192, 0.306, 1.0))
+            set_pose(body, pose)
+            self.movable_bodies.append(body)
+
+        self.all_bodies = list(set(self.movable_bodies) | set(self.env_bodies) | set(self.regions))
+
+        for b in self.movable_bodies:
+            obj_center, obj_extent = get_center_extent(b)
+            r_outSphere = np.linalg.norm(obj_extent) / 2 * 1.01
+            body_pose = get_pose(b)
+            body_frame = tform_from_pose(body_pose)
+            center_frame = tform_from_pose((obj_center, body_pose[1]))
+            relative_frame_center = np.dot(center_frame, np.linalg.inv(body_frame))
+
+            self.dic_body_info[b] = (obj_extent, r_outSphere, relative_frame_center)
 
     def reset(self, region=None):
         if self.movable_bodies:
@@ -138,6 +199,7 @@ class DataGenerator(object):
             self.movable_bodies.remove(b)
             self.all_bodies.remove(b)
 
+
     def get_X(self):
         p_inner_outer = 0.25
         max_range = 0.6  # meters
@@ -147,7 +209,6 @@ class DataGenerator(object):
         inner_vertices = unit_vertices * r_inner + centroid
         inner_ends = unit_vertices * (max_range + r_inner) + centroid
         # draw_sphere(r_inner, centroid, [0, 1, 1, 0.5])
-
 
         """Temporarily move away the objects that are not involved in rayTest"""
         offset = [0, 0, -5]
